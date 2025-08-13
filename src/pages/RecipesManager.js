@@ -10,10 +10,10 @@ export default function RecipesManager({ recipes, setRecipes }) {
   const { theme } = useTheme();
   const [selectedRecipe, setSelectedRecipe] = useState(null);
   const [newRecipeName, setNewRecipeName] = useState('');
-  const [newIngredient, setNewIngredient] = useState({ ingredient: '', bakersPercent: '', weight: '', unit: '' });
+  const [newIngredient, setNewIngredient] = useState({ ingredient: '', bakersPercent: '', weight: '' });
   const [editingBakersPercent, setEditingBakersPercent] = useState(null);
 
-  const isAddDisabled = !(newIngredient.ingredient && newIngredient.bakersPercent && newIngredient.weight && newIngredient.unit);
+  const isAddDisabled = !(newIngredient.ingredient && newIngredient.bakersPercent && newIngredient.weight);
 
   const addNewRecipeName = () => {
     if (!newRecipeName) return;
@@ -304,11 +304,6 @@ export default function RecipesManager({ recipes, setRecipes }) {
                   value={newIngredient.ingredweightient}
                   onChange={(e) => setNewIngredient({ ...newIngredient, weight: e.target.value })}
                 />
-                <Input
-                  label="יחידה"
-                  value={newIngredient.unit}
-                  onChange={(e) => setNewIngredient({ ...newIngredient, unit: e.target.value })}
-                />
                 <Button
                   title={isAddDisabled ? 'נא למלא את כל השדות הדרושים' : 'הוסף'}
                   onClick={addIngredientToRecipe}
@@ -355,7 +350,6 @@ export default function RecipesManager({ recipes, setRecipes }) {
                       ? ((Number(row.bakersPercent) / 100) * scaleFactor).toFixed(0)
                       : ''
                 },
-                { key: 'unit', label: 'יחידה' },
                 {
                   key: 'remove',
                   label: 'מחק',

@@ -5,7 +5,7 @@ const Container = ({ children }) => {
     fontFamily: 'Arial, sans-serif',
     margin: 'auto',
     padding: 20,
-    maxWidth: 960,
+    maxWidth: '70dvw',
     maxHeight: '85dvh',
     backgroundColor: '#fff',
     color: '#333',

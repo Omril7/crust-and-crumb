@@ -18,7 +18,7 @@ export const ThemeProvider = ({ children }) => {
     },
     shadows: {
       navbar: '0 4px 12px rgba(139, 110, 75, 0.15)', // warm-toned shadow
-      activeButton: '0 2px 6px rgba(139, 110, 75, 0.2)',
+      activeButton: '0 4px 12px rgba(139, 105, 20, 0.2)',
     }
   });
 

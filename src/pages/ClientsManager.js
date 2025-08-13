@@ -166,12 +166,13 @@ export default function ClientsManager({ clients, setClients }) {
       {/* Clients Table */}
       <Table
         title="טבלת לקוחות"
+        sortable={true}
         headers={[
           { key: 'name', label: 'שם לקוח' },
-          { key: 'phone', label: 'טלפון' },
+          { key: 'phone', label: 'טלפון', sortable: false },
           { key: 'pickup', label: 'מיקום איסוף' },
           { key: 'date', label: 'תאריך הצטרפות' },
-          { key: 'notes', label: 'הערות' }
+          { key: 'notes', label: 'הערות', sortable: false }
         ]}
         data={clients}
       />

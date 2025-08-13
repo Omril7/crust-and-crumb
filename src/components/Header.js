@@ -5,7 +5,8 @@ const Header = ({ title, icon }) => {
 
   const style = {
     textAlign: 'center',
-    marginBottom: 20,
+    width: '50%',
+    margin: '0 auto 20px auto',
     fontSize: 26,
     fontWeight: 'bold',
     display: 'flex',

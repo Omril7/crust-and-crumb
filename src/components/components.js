@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 
 export const Input = ({
@@ -133,7 +134,9 @@ export const Button = ({ title, onClick, isGood = true, disabled = false, icon =
     alignItems: 'center',
     gap: 6,
     padding: '12px 20px',
-    backgroundColor: disabled ? isGood ? '#daad80ff' : '#f77f76ff' : isGood ? '#5b4636' : '#f44336',
+    backgroundColor: disabled
+      ? isGood ? '#d4b896' : '#e6a89f' // Disabled: muted wheat & soft coral
+      : isGood ? '#8b6914' : '#c44536', // Active: golden brown & warm brick
     color: theme.buttonText || '#fff',
     border: 'none',
     borderRadius: 10,
@@ -142,7 +145,7 @@ export const Button = ({ title, onClick, isGood = true, disabled = false, icon =
     cursor: disabled ? 'not-allowed' : 'pointer',
     userSelect: 'none',
     transition: 'background-color 0.3s',
-    boxShadow: theme.boxShadow || '0 4px 12px rgba(0,0,0,0.15)',
+    boxShadow: theme.shadows.activeButton, // Golden shadow
     alignSelf: 'flex-start',
     width: 'fit-content'
   };
@@ -154,7 +157,7 @@ export const Button = ({ title, onClick, isGood = true, disabled = false, icon =
     justifyContent: 'center',
     width: 20,
     height: 20,
-    color: theme.textPrimary || '#333',
+    color: theme.textPrimary || '#f5f1e8', // Cream white for better contrast
     cursor: 'default',
     ...(iconPosition === 'left' ? { marginLeft: 8 } : { marginRight: 8 }),
     pointerEvents: 'none',
@@ -295,8 +298,68 @@ export const Select = ({
   );
 };
 
-export const Table = ({ title, headers, data }) => {
+export const Table = ({ title, headers, data, sortable = false }) => {
   const { theme } = useTheme();
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: null });
+
+  const sortedData = useMemo(() => {
+    if (!sortConfig.key || !sortable) return data;
+
+    return [...data].sort((a, b) => {
+      const aVal = a[sortConfig.key];
+      const bVal = b[sortConfig.key];
+
+      // Handle null/undefined values
+      if (aVal == null && bVal == null) return 0;
+      if (aVal == null) return 1;
+      if (bVal == null) return -1;
+
+      // Handle numbers
+      if (!isNaN(aVal) && !isNaN(bVal)) {
+        const numA = parseFloat(aVal);
+        const numB = parseFloat(bVal);
+        return sortConfig.direction === 'asc' ? numA - numB : numB - numA;
+      }
+
+      // Handle strings
+      const strA = String(aVal).toLowerCase();
+      const strB = String(bVal).toLowerCase();
+
+      if (sortConfig.direction === 'asc') {
+        return strA.localeCompare(strB, 'he'); // Hebrew locale support
+      } else {
+        return strB.localeCompare(strA, 'he');
+      }
+    });
+  }, [data, sortConfig, sortable]);
+
+  const handleSort = (key, sortable) => {
+    if (!sortable) return;
+
+    setSortConfig(prevConfig => {
+      if (prevConfig.key === key) {
+        if (prevConfig.direction === 'asc') {
+          return { key, direction: 'desc' };
+        } else if (prevConfig.direction === 'desc') {
+          return { key: null, direction: null }; // Reset to no sort
+        }
+      }
+      return { key, direction: 'asc' };
+    });
+  };
+
+  const getSortIcon = (key, sortable) => {
+    if (!sortable) return null;
+
+    if (sortConfig.key === key) {
+      return sortConfig.direction === 'asc' ? (
+        <ChevronUp size={16} />
+      ) : (
+        <ChevronDown size={16} />
+      );
+    }
+    return <ChevronsUpDown size={16} style={{ opacity: 0.5 }} />;
+  };
 
   const styles = {
     tableWrapper: {
@@ -325,8 +388,21 @@ export const Table = ({ title, headers, data }) => {
       backgroundColor: theme.tableHeaderBackground || '#f0f0f0',
       fontWeight: '700',
       textAlign: 'center',
-      color: theme.colors.textLight || '#4caf50',
+      color: theme.colors?.textLight || '#4caf50',
       whiteSpace: 'nowrap',
+    },
+    thSortable: {
+      cursor: 'pointer',
+      transition: 'background-color 0.2s',
+      '&:hover': {
+        backgroundColor: theme.tableHeaderHover || '#e8e8e8',
+      }
+    },
+    thContent: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '4px',
     },
     td: {
       borderBottom: `1px solid ${theme.borderColor || '#ddd'}`,
@@ -342,21 +418,41 @@ export const Table = ({ title, headers, data }) => {
       <table style={styles.table} aria-label={title}>
         <thead>
           <tr>
-            {headers.map((header, index) => (
-              <th key={index} style={styles.th}>
-                {header.label ?? header}
-              </th>
-            ))}
+            {headers.map((header, index) => {
+              const key = typeof header === 'string' ? header : header.key;
+              const label = typeof header === 'string' ? header : (header.label ?? header.key);
+              const isSortable = sortable && (header.sortable !== false); // Allow opt-out per column
+
+              return (
+                <th
+                  key={index}
+                  style={{
+                    ...styles.th,
+                    ...(isSortable ? styles.thSortable : {}),
+                    ...(isSortable && sortConfig.key === key ? {
+                      backgroundColor: theme.tableHeaderActive || '#e0e0e0'
+                    } : {})
+                  }}
+                  onClick={() => handleSort(key, isSortable)}
+                  title={isSortable ? 'לחץ למיון' : undefined}
+                >
+                  <div style={styles.thContent}>
+                    {label}
+                    {getSortIcon(key, isSortable)}
+                  </div>
+                </th>
+              );
+            })}
           </tr>
         </thead>
         <tbody>
-          {data.map((row, rowIndex) => (
+          {sortedData.map((row, rowIndex) => (
             <tr key={rowIndex}>
               {headers.map((header, colIndex) => {
                 const key = typeof header === 'string' ? header : header.key;
                 const content =
                   typeof header === 'object' && header.render
-                    ? header.render(row[key], row, rowIndex) // custom renderer
+                    ? header.render(row[key], row, rowIndex)
                     : row[key] ?? '';
 
                 return (

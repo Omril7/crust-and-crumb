@@ -282,6 +282,7 @@ export default function OrdersManager({ orders, setOrders, clients, recipes }) {
       {/* Orders Table */}
       <Table
         title="טבלת הזמנות"
+        sortable={true}
         headers={[
           { key: 'clientName', label: 'שם לקוח' },
           {
@@ -306,14 +307,16 @@ export default function OrdersManager({ orders, setOrders, clients, recipes }) {
                   );
                 })}
               </>
-            )
+            ),
+            sortable: false
+            
           },
           {
             key: 'total',
             label: 'סה"כ',
             render: (value) => <strong>₪{value}</strong>
           },
-          { key: 'notes', label: 'הערות' },
+          { key: 'notes', label: 'הערות', sortable: false },
           {
             key: 'remove',
             label: 'מחק',
@@ -328,7 +331,8 @@ export default function OrdersManager({ orders, setOrders, clients, recipes }) {
               >
                 <Trash2 size={20} />
               </div>
-            )
+            ),
+            sortable: false
           }
         ]}
         data={orders}

@@ -173,10 +173,12 @@ export default function Inventory({ inventory, setInventory }) {
       {/* Inventory Table */}
       <Table
         title="טבלת לקוחות"
+        sortable={true} // Enable sorting for the entire table
         headers={[
           {
             key: 'alert',
             label: '',
+            sortable: false, // Disable sorting for this specific column
             render: (_, row) => (
               <>
                 {(parseFloat(row.qty || 0) < parseFloat(row.lowThreshold || 0)) ? (
@@ -184,11 +186,10 @@ export default function Inventory({ inventory, setInventory }) {
                 ) : (
                   <></>
                 )}
-
               </>
             )
           },
-          { key: 'ingredient', label: 'מרכיב' },
+          { key: 'ingredient', label: 'מרכיב' }, // Sortable by default
           {
             key: 'qty',
             label: 'כמות',
@@ -214,12 +215,13 @@ export default function Inventory({ inventory, setInventory }) {
               </div>
             )
           },
-          { key: 'unit', label: 'מידה' },
-          { key: 'lowThreshold', label: 'חסם תחתון' },
-          { key: 'lastUpdate', label: 'עידכון אחרון' },
+          { key: 'unit', label: 'מידה' }, // Sortable by default
+          { key: 'lowThreshold', label: 'חסם תחתון' }, // Sortable by default
+          { key: 'lastUpdate', label: 'עידכון אחרון' }, // Sortable by default
           {
             key: 'remove',
             label: 'מחק',
+            sortable: false, // Disable sorting for action column
             render: (_, row) => (
               <div
                 style={{ cursor: 'pointer', color: 'red' }}
@@ -234,7 +236,7 @@ export default function Inventory({ inventory, setInventory }) {
             )
           }
         ]}
-        data={sortedInventory}
+        data={sortedInventory} // Note: remove your custom sorting since table handles it now
       />
 
     </Container >
