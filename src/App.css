@@ -28,10 +28,19 @@
   color: #61dafb;
 }
 
+input[list]::-webkit-calendar-picker-indicator {
+  opacity: 0;
+}
+
+/* input[list]::-webkit-calendar-picker-indicator {
+  display: none;
+} */
+
 @keyframes App-logo-spin {
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
