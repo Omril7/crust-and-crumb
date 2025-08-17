@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
+import { useScreenSize } from '../hooks/useScreenSize';
 
 export const Input = ({
   label,
@@ -300,6 +301,7 @@ export const Select = ({
 
 export const Table = ({ title, headers, data, sortable = false }) => {
   const { theme } = useTheme();
+  const { isMobile, isTablet, isDesktop } = useScreenSize();
   const [sortConfig, setSortConfig] = useState({ key: null, direction: null });
 
   const sortedData = useMemo(() => {
@@ -349,69 +351,138 @@ export const Table = ({ title, headers, data, sortable = false }) => {
   };
 
   const getSortIcon = (key, sortable) => {
-    if (!sortable) return null;
+    if (!sortable || isMobile) return null; // Hide sort icons on mobile
+
+    const iconSize = isTablet ? 14 : 16;
 
     if (sortConfig.key === key) {
       return sortConfig.direction === 'asc' ? (
-        <ChevronUp size={16} />
+        <ChevronUp size={iconSize} />
       ) : (
-        <ChevronDown size={16} />
+        <ChevronDown size={iconSize} />
       );
     }
-    return <ChevronsUpDown size={16} style={{ opacity: 0.5 }} />;
+    return <ChevronsUpDown size={iconSize} style={{ opacity: 0.5 }} />;
   };
 
   const styles = {
     tableWrapper: {
       gridColumn: '1 / -1',
-      borderRadius: 12,
-      boxShadow: theme.boxShadow || '0 4px 12px rgba(0,0,0,0.1)',
+      borderRadius: isMobile ? 8 : 12,
+      boxShadow: isMobile 
+        ? '0 2px 8px rgba(0,0,0,0.08)' 
+        : theme.boxShadow || '0 4px 12px rgba(0,0,0,0.1)',
       backgroundColor: theme.surface || '#fafafa',
-      maxHeight: 400,
+      maxHeight: isMobile ? 'calc(100vh - 300px)' : isTablet ? 350 : 400,
       overflowY: 'auto',
       overflowX: 'auto',
+      WebkitOverflowScrolling: 'touch', // Smooth scrolling on iOS
+      // Mobile-specific improvements
+      ...(isMobile && {
+        fontSize: '14px',
+        marginTop: '10px',
+      })
     },
     table: {
       width: '100%',
       borderCollapse: 'collapse',
-      fontSize: '1rem',
+      fontSize: isMobile ? '0.85rem' : isTablet ? '0.95rem' : '1rem',
       color: theme.textPrimary || '#333',
       userSelect: 'none',
-      minWidth: 600,
+      minWidth: isMobile ? '100%' : isTablet ? 500 : 600,
     },
     th: {
       position: 'sticky',
       top: 0,
       zIndex: 2,
       borderBottom: `2px solid ${theme.borderColor || '#ccc'}`,
-      padding: '14px 12px',
+      padding: isMobile ? '10px 6px' : isTablet ? '12px 8px' : '14px 12px',
       backgroundColor: theme.tableHeaderBackground || '#f0f0f0',
       fontWeight: '700',
       textAlign: 'center',
       color: theme.colors?.textLight || '#4caf50',
-      whiteSpace: 'nowrap',
+      whiteSpace: isMobile ? 'normal' : 'nowrap',
+      fontSize: isMobile ? '0.8rem' : isTablet ? '0.9rem' : '1rem',
+      lineHeight: isMobile ? '1.2' : '1.4',
+      // Allow text wrapping on mobile for long headers
+      wordWrap: isMobile ? 'break-word' : 'normal',
+      maxWidth: isMobile ? '80px' : 'none',
     },
     thSortable: {
-      cursor: 'pointer',
+      cursor: !isMobile ? 'pointer' : 'default', // Remove pointer cursor on mobile
       transition: 'background-color 0.2s',
-      '&:hover': {
+      '&:hover': !isMobile ? {
         backgroundColor: theme.tableHeaderHover || '#e8e8e8',
-      }
+      } : {}
     },
     thContent: {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: '4px',
+      gap: isMobile ? '2px' : '4px',
+      flexDirection: isMobile ? 'column' : 'row',
+      // Stack icon below text on mobile if space is tight
+      ...(isMobile && {
+        minHeight: '32px',
+      })
     },
     td: {
       borderBottom: `1px solid ${theme.borderColor || '#ddd'}`,
-      padding: '12px 10px',
+      padding: isMobile ? '8px 4px' : isTablet ? '10px 6px' : '12px 10px',
       textAlign: 'center',
       verticalAlign: 'middle',
-      whiteSpace: 'nowrap',
+      whiteSpace: isMobile ? 'normal' : 'nowrap',
+      fontSize: isMobile ? '0.8rem' : isTablet ? '0.9rem' : '1rem',
+      lineHeight: isMobile ? '1.2' : '1.4',
+      maxWidth: isMobile ? '100px' : 'none',
+      wordWrap: isMobile ? 'break-word' : 'normal',
+      // Better spacing for touch targets on mobile
+      ...(isMobile && {
+        minHeight: '36px',
+      })
     },
+    // Title styling
+    tableTitle: {
+      padding: isMobile ? '8px 12px' : '12px 16px',
+      backgroundColor: theme.colors?.primaryGradient || '#4caf50',
+      color: theme.colors?.textLight || '#fff',
+      fontWeight: '600',
+      fontSize: isMobile ? '0.9rem' : '1rem',
+      textAlign: 'center',
+      borderRadius: `${isMobile ? 8 : 12}px ${isMobile ? 8 : 12}px 0 0`,
+      margin: 0,
+      position: 'sticky',
+      top: 0,
+      zIndex: 3,
+    },
+    // Empty state
+    emptyState: {
+      padding: isMobile ? '20px' : '40px',
+      textAlign: 'center',
+      color: theme.textSecondary || '#666',
+      fontSize: isMobile ? '0.9rem' : '1rem',
+      fontStyle: 'italic',
+    },
+    // Mobile-specific row styling
+    mobileRow: {
+      borderBottom: `2px solid ${theme.borderColor || '#ddd'}`,
+      '&:last-child': {
+        borderBottom: 'none'
+      }
+    }
   };
+
+  // If no data, show empty state
+  if (!data || data.length === 0) {
+    return (
+      <div style={styles.tableWrapper}>
+        {title && <div style={styles.tableTitle}>{title}</div>}
+        <div style={styles.emptyState}>
+          אין נתונים להצגה
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={styles.tableWrapper}>
@@ -421,7 +492,7 @@ export const Table = ({ title, headers, data, sortable = false }) => {
             {headers.map((header, index) => {
               const key = typeof header === 'string' ? header : header.key;
               const label = typeof header === 'string' ? header : (header.label ?? header.key);
-              const isSortable = sortable && (header.sortable !== false); // Allow opt-out per column
+              const isSortable = sortable && (header.sortable !== false) && !isMobile; // Disable sorting on mobile
 
               return (
                 <th
@@ -437,7 +508,7 @@ export const Table = ({ title, headers, data, sortable = false }) => {
                   title={isSortable ? 'לחץ למיון' : undefined}
                 >
                   <div style={styles.thContent}>
-                    {label}
+                    <span>{label}</span>
                     {getSortIcon(key, isSortable)}
                   </div>
                 </th>
@@ -447,7 +518,10 @@ export const Table = ({ title, headers, data, sortable = false }) => {
         </thead>
         <tbody>
           {sortedData.map((row, rowIndex) => (
-            <tr key={rowIndex}>
+            <tr 
+              key={rowIndex}
+              style={isMobile ? styles.mobileRow : {}}
+            >
               {headers.map((header, colIndex) => {
                 const key = typeof header === 'string' ? header : header.key;
                 const content =

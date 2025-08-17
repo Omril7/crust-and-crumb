@@ -3,11 +3,13 @@ import Container from '../components/Container';
 import Header from '../components/Header';
 import { CookingPot, Plus, Trash2 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
+import { useScreenSize } from '../hooks/useScreenSize';
 import RecipeCard from '../components/RecipeCard';
 import { Button, Input, Table } from '../components/components';
 
 export default function RecipesManager({ recipes, setRecipes }) {
   const { theme } = useTheme();
+  const { isMobile, isTablet, isDesktop } = useScreenSize();
   const [selectedRecipe, setSelectedRecipe] = useState(null);
   const [newRecipeName, setNewRecipeName] = useState('');
   const [newIngredient, setNewIngredient] = useState({ ingredient: '', bakersPercent: '', weight: '' });
@@ -132,45 +134,56 @@ export default function RecipesManager({ recipes, setRecipes }) {
   const styles = {
     section: {
       background: '#f9f9f9',
-      borderRadius: 8,
-      padding: 15,
-      boxShadow: '0 1px 5px rgba(0,0,0,0.1)',
+      borderRadius: isMobile ? 6 : 8,
+      padding: isMobile ? 12 : isTablet ? 13 : 15,
+      boxShadow: isMobile ? '0 1px 3px rgba(0,0,0,0.1)' : '0 1px 5px rgba(0,0,0,0.1)',
     },
     sectionHeader: {
-      fontSize: '1.2rem',
+      fontSize: isMobile ? '1rem' : isTablet ? '1.1rem' : '1.2rem',
       fontWeight: '600',
-      marginBottom: 18,
+      marginBottom: isMobile ? 12 : isTablet ? 15 : 18,
       color: theme.colors.textLight || '#4caf50',
       display: 'flex',
       alignItems: 'center',
-      gap: 8,
+      gap: isMobile ? 6 : 8,
     },
     formRow: {
       display: 'flex',
-      alignItems: 'center',
-      gap: 10,
-      marginBottom: 15,
+      alignItems: isMobile ? 'flex-start' : 'center',
+      gap: isMobile ? 8 : 10,
+      marginBottom: isMobile ? 12 : 15,
       flexWrap: 'wrap',
+      flexDirection: isMobile ? 'column' : 'row',
     },
     button: {
-      padding: '12px 22px',
+      padding: isMobile ? '10px 18px' : isTablet ? '11px 20px' : '12px 22px',
       backgroundColor: theme.primary || '#4caf50',
       color: theme.buttonText || '#fff',
       border: 'none',
-      borderRadius: 10,
-      fontSize: '1.1rem',
+      borderRadius: isMobile ? 8 : 10,
+      fontSize: isMobile ? '1rem' : '1.1rem',
       fontWeight: '700',
       cursor: 'pointer',
       userSelect: 'none',
       transition: 'background-color 0.3s',
       boxShadow: theme.boxShadow || '0 4px 12px rgba(0,0,0,0.15)',
-      alignSelf: 'flex-start',
+      alignSelf: isMobile ? 'stretch' : 'flex-start',
     },
     grid: {
       display: 'grid',
-      gridTemplateColumns: '1fr 1fr',
-      gap: '12px',
+      gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(2, 1fr)',
+      gap: isMobile ? '8px' : '12px',
       marginTop: '10px',
+    },
+    recipeGrid: {
+      display: 'flex',
+      flexWrap: 'wrap',
+      gap: isMobile ? '10px' : '15px',
+      justifyContent: 'center',
+      padding: isMobile ? '0 5px' : '0',
+      maxHeight: isMobile ? '60vh' : 'none',
+      overflowY: isMobile ? 'auto' : 'visible',
+      paddingBottom: isMobile ? '20px' : '0',
     },
     modalBackdrop: {
       position: 'fixed',
@@ -178,30 +191,65 @@ export default function RecipesManager({ recipes, setRecipes }) {
       background: 'rgba(0,0,0,0.6)',
       display: 'flex',
       justifyContent: 'center',
-      alignItems: 'center',
+      alignItems: isMobile ? 'flex-start' : 'center',
       zIndex: 1000,
-      animation: 'fadeIn 0.3s ease'
+      animation: 'fadeIn 0.3s ease',
+      padding: isMobile ? '10px' : '20px',
+      overflowY: isMobile ? 'auto' : 'hidden',
+      paddingTop: isMobile ? '20px' : '20px',
+      paddingBottom: isMobile ? '20px' : '20px',
     },
     modal: {
       background: '#fff',
       borderRadius: theme.borderRadius?.navbar || '12px',
       boxShadow: theme.shadows?.navbar || '0 4px 12px rgba(0,0,0,0.2)',
-      maxWidth: '700px',
-      width: '90%',
-      maxHeight: '85%',
+      maxWidth: isMobile ? '100%' : isTablet ? '600px' : '700px',
+      width: '100%',
+      maxHeight: isMobile ? 'calc(100vh - 40px)' : '85%',
+      minHeight: isMobile ? 'auto' : 'auto',
       overflowY: 'auto',
-      padding: '20px 24px',
-      animation: 'slideUp 0.3s ease'
+      padding: isMobile ? '16px' : isTablet ? '18px 20px' : '20px 24px',
+      animation: 'slideUp 0.3s ease',
+      margin: isMobile ? '0' : 'auto',
+      position: 'relative',
+      // Ensure proper scrolling on mobile
+      WebkitOverflowScrolling: 'touch',
+    },
+    modalHeader: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 15,
+      borderBottom: `2px solid ${theme.colors?.activeButtonBg || '#eee'}`,
+      paddingBottom: 10,
+      flexWrap: isMobile ? 'wrap' : 'nowrap',
+    },
+    modalTitle: {
+      margin: 0,
+      fontSize: isMobile ? '1.2rem' : '1.4rem',
+      wordBreak: 'break-word',
+      flex: isMobile ? '1 1 100%' : 'none',
+      marginBottom: isMobile ? '8px' : '0',
+    },
+    closeButton: {
+      background: 'transparent',
+      border: 'none',
+      fontSize: isMobile ? '1.3rem' : '1.5rem',
+      cursor: 'pointer',
+      color: '#999',
+      padding: isMobile ? '5px' : '0',
+      minWidth: isMobile ? '30px' : 'auto',
+      minHeight: isMobile ? '30px' : 'auto',
     }
   };
 
   return (
     <Container>
-      <Header title={"ניהול מתכונים"} icon={<CookingPot size={32} />} />
+      <Header title={"ניהול מתכונים"} icon={<CookingPot size={isMobile ? 28 : 32} />} />
 
       <section style={styles.section} aria-label="הוספת מתכון חדש">
         <h3 style={styles.sectionHeader}>
-          <Plus size={20} />
+          <Plus size={isMobile ? 18 : 20} />
           הוספת מתכון חדש
         </h3>
 
@@ -216,10 +264,18 @@ export default function RecipesManager({ recipes, setRecipes }) {
         </div>
       </section>
 
-      <section style={{ ...styles.section, marginTop: '20px' }} aria-label="הוספת שם מתכון חדש">
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', justifyContent: 'center' }}>
+      <section style={{ 
+        ...styles.section, 
+        marginTop: isMobile ? '16px' : '20px',
+        marginBottom: isMobile ? '20px' : '0'
+      }} aria-label="רשימת מתכונים">
+        <h3 style={styles.sectionHeader}>
+          רשימת מתכונים ({recipes.length})
+        </h3>
+        <div style={styles.recipeGrid}>
           {recipes.map((recipe, idx) => (
             <RecipeCard
+              key={recipe.name}
               recipe={recipe}
               idx={idx}
               selectedRecipe={selectedRecipe}
@@ -233,24 +289,11 @@ export default function RecipesManager({ recipes, setRecipes }) {
         <div style={styles.modalBackdrop} onClick={() => setSelectedRecipe(null)}>
           <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
             {/* Header */}
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 15,
-              borderBottom: `2px solid ${theme.colors?.activeButtonBg || '#eee'}`,
-              paddingBottom: 10
-            }}>
-              <h2 style={{ margin: 0, fontSize: '1.4rem' }}>{selectedRecipe}</h2>
+            <div style={styles.modalHeader}>
+              <h2 style={styles.modalTitle}>{selectedRecipe}</h2>
               <button
                 onClick={() => setSelectedRecipe(null)}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  fontSize: '1.5rem',
-                  cursor: 'pointer',
-                  color: '#999'
-                }}
+                style={styles.closeButton}
                 title="סגור"
               >
                 ×
@@ -280,9 +323,9 @@ export default function RecipesManager({ recipes, setRecipes }) {
             </div>
 
             {/* Add Ingredient */}
-            <section style={{ ...styles.section, marginBottom: '20px' }} aria-label="הוספת מרכיב">
+            <section style={{ ...styles.section, marginBottom: isMobile ? '16px' : '20px' }} aria-label="הוספת מרכיב">
               <h4 style={styles.sectionHeader}>
-                <Plus size={20} />
+                <Plus size={isMobile ? 18 : 20} />
                 הוספת מרכיב
               </h4>
 
@@ -301,7 +344,7 @@ export default function RecipesManager({ recipes, setRecipes }) {
                 <Input
                   label="משקל (גרם)"
                   type="number"
-                  value={newIngredient.ingredweightient}
+                  value={newIngredient.weight}
                   onChange={(e) => setNewIngredient({ ...newIngredient, weight: e.target.value })}
                 />
                 <Button
@@ -334,7 +377,10 @@ export default function RecipesManager({ recipes, setRecipes }) {
                           }
                           onBlur={saveEditBakersPercent}
                           autoFocus
-                          style={{ width: '60px' }}
+                          style={{ 
+                            width: isMobile ? '50px' : '60px',
+                            fontSize: isMobile ? '14px' : '16px'
+                          }}
                         />
                       ) : (
                         value
@@ -355,11 +401,17 @@ export default function RecipesManager({ recipes, setRecipes }) {
                   label: 'מחק',
                   render: (_, __, i) => (
                     <div
-                      style={{ cursor: 'pointer', color: 'red' }}
+                      style={{ 
+                        cursor: 'pointer', 
+                        color: 'red',
+                        padding: isMobile ? '8px' : '4px',
+                        display: 'flex',
+                        justifyContent: 'center'
+                      }}
                       onClick={() => removeIngredient(i)}
                       role="button"
                     >
-                      <Trash2 size={20} />
+                      <Trash2 size={isMobile ? 18 : 20} />
                     </div>
                   )
                 }
