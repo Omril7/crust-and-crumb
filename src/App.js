@@ -121,8 +121,8 @@ function AppContent() {
 
       setUpdating(false);
     };
-
-    processEvents();
+    
+    if (!!session) processEvents();
   }, []);
 
   const styles = {
