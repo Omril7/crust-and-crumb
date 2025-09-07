@@ -156,7 +156,7 @@ function AppContent() {
           <Routes>
             <Route
               path="/"
-              element={<Home user={session?.user} />}
+              element={<ProtectedRoute session={session}><Home user={session?.user} /></ProtectedRoute>}
             />
             <Route
               path="/login"
