@@ -204,14 +204,16 @@ const Navbar = ({ onLogout }) => {
             {item.label}
           </button>
         ))}
-        <button
-          onClick={handleLogout}
-          style={{ ...styles.button, color: theme.accent.error }}
-          onMouseEnter={(e) => e.target.style.backgroundColor = styles.hoverEffect.backgroundColor}
-          onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-        >
-          התנתק
-        </button>
+        {currentPath !== 'login' && (
+          <button
+            onClick={handleLogout}
+            style={{ ...styles.button, color: theme.accent.error }}
+            onMouseEnter={(e) => e.target.style.backgroundColor = styles.hoverEffect.backgroundColor}
+            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+          >
+            התנתק
+          </button>
+        )}
       </div>
     </nav>
   );
