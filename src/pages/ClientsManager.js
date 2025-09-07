@@ -1,14 +1,19 @@
 import React, { useState } from 'react';
-import { UserPlus, Phone, MapPin, Calendar, FileUp, Edit2 } from 'lucide-react';
+import { UserPlus, Phone, MapPin, Calendar, FileUp, Edit2, Trash2 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useScreenSize } from '../hooks/useScreenSize';
+import { useIndexedDB } from '../hooks/useIndexedDB';
 import Container from '../components/Container';
 import Header from '../components/Header';
 import { Button, Input, Select, Table } from '../components/components';
+import { formatPhone } from '../utils/helper';
+import { useConfirm } from '../contexts/ConfirmContext';
 
-export default function ClientsManager({ clients, setClients }) {
+export default function ClientsManager() {
   const { theme } = useTheme();
   const { isMobile, isTablet, isDesktop } = useScreenSize();
+  const { confirm } = useConfirm();
+  const [clients, setClients] = useIndexedDB("clients", []);
 
   const [form, setForm] = useState({ name: '', phone: '', pickup: '', date: '', notes: '' });
 
@@ -32,12 +37,154 @@ export default function ClientsManager({ clients, setClients }) {
       const rows = text.split('\n').slice(1);
       const newClients = rows.map(row => {
         const [name, phone, pickup, date, notes] = row.split(',');
-        return { name, phone, pickup, date, notes };
+        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        return {
+          name: name?.trim(),
+          phone: formatPhone(phone?.trim() || ''),
+          pickup: pickup?.trim(),
+          date: date?.trim() || today,
+          notes: notes?.trim() || ''
+        };
       }).filter(c => c.name);
       setClients([...clients, ...newClients]);
     };
     reader.readAsText(file);
   };
+
+  const handleClientChange = (index, key, value) => {
+    const updatedClients = [...clients];
+    updatedClients[index][key] = value;
+    setClients(updatedClients);
+  };
+
+  const handleRemoveClient = async (index) => {
+    const ok = await confirm('האם אתה בטוח שברצונך למחוק לקוח זה?');
+    if (!ok) return;
+    const updatedClients = clients.filter((_, i) => i !== index);
+    setClients(updatedClients);
+  };
+
+  // Mobile-optimized table headers
+  const tableHeaders = isMobile ? [
+    {
+      key: 'summary',
+      label: 'לקוח',
+      render: (_, client) => (
+        <div style={{ textAlign: 'right', fontSize: '0.75rem', lineHeight: '1.3' }}>
+          <div><strong>שם:</strong> {client.name}</div>
+          <div><strong>טלפון:</strong> {client.phone}</div>
+          <div><strong>מיקום איסוף:</strong> {client.pickup}</div>
+          <div><strong>תאריך הצטרפות:</strong> {client.date}</div>
+          {client.notes && <div><strong>הערות:</strong> {client.notes}</div>}
+        </div>
+      ),
+      sortable: false
+    },
+    {
+      key: 'remove',
+      label: 'מחק',
+      render: (_, client, index) => (
+        <div
+          style={{
+            cursor: 'pointer',
+            color: 'red',
+            padding: '8px',
+            display: 'flex',
+            justifyContent: 'center'
+          }}
+          onClick={() => handleRemoveClient(index)}
+          title="הסר לקוח"
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && handleRemoveClient(index)}
+        >
+          <Trash2 size={18} />
+        </div>
+      ),
+      sortable: false
+    }
+  ] : [
+    {
+      key: 'name',
+      label: 'שם לקוח',
+      render: (value, _, index) => (
+        <Input
+          value={value}
+          onChange={(e) => handleClientChange(index, 'name', e.target.value)}
+          style={{ width: '100%' }}
+        />
+      ),
+    },
+    {
+      key: 'phone',
+      label: 'טלפון',
+      render: (value, _, index) => (
+        <Input
+          value={value}
+          onChange={(e) => handleClientChange(index, 'phone', formatPhone(e.target.value))}
+          style={{ width: '100%' }}
+        />
+      ),
+    },
+    {
+      key: 'pickup',
+      label: 'מיקום איסוף',
+      render: (value, _, index) => (
+        <Select
+          value={value}
+          options={pickupOptions}
+          onChange={(e) => handleClientChange(index, 'pickup', e.target.value)}
+          style={{ width: '100%' }}
+        />
+      ),
+    },
+    {
+      key: 'date',
+      label: 'תאריך הצטרפות',
+      render: (value, _, index) => (
+        <Input
+          type="date"
+          value={value}
+          onChange={(e) => handleClientChange(index, 'date', e.target.value)}
+          style={{ width: '100%' }}
+        />
+      ),
+    },
+    {
+      key: 'notes',
+      label: 'הערות',
+      render: (value, _, index) => (
+        <Input
+          value={value}
+          onChange={(e) => handleClientChange(index, 'notes', e.target.value)}
+          style={{ width: '100%' }}
+        />
+      ),
+    },
+    {
+      key: 'remove',
+      label: '',
+      render: (_, client, index) => (
+        <div
+          style={{
+            cursor: 'pointer',
+            color: 'red',
+            padding: '8px',
+            display: 'flex',
+            justifyContent: 'center'
+          }}
+          onClick={() => handleRemoveClient(index)}
+          title="הסר לקוח"
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && handleRemoveClient(index)}
+        >
+          <Trash2 size={18} />
+        </div>
+      ),
+      sortable: false
+    }
+  ];
 
   const styles = {
     gridContainer: {
@@ -148,11 +295,12 @@ export default function ClientsManager({ clients, setClients }) {
               <Input
                 label="טלפון"
                 value={form.phone}
-                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                onChange={(e) => setForm({ ...form, phone: formatPhone(e.target.value) })}
                 icon={<Phone size={18} />}
                 style={{ width: '100%' }}
-                type={isMobile ? 'tel' : 'text'} // Use tel input on mobile
+                type={isMobile ? 'tel' : 'text'}
               />
+
             </div>
             <div style={styles.inputGroup}>
               <Select
@@ -214,8 +362,6 @@ export default function ClientsManager({ clients, setClients }) {
                   style={{
                     position: 'absolute',
                     opacity: 0,
-                    width: '100%',
-                    height: '100%',
                     cursor: 'pointer'
                   }}
                   aria-label="העלאת קובץ CSV"
@@ -245,32 +391,8 @@ export default function ClientsManager({ clients, setClients }) {
       <div style={styles.tableWrapper}>
         <Table
           title={`טבלת לקוחות (${clients.length})`}
-          sortable={!isMobile} // Disable sorting on mobile for simplicity
-          headers={[
-            { key: 'name', label: 'שם לקוח' },
-            {
-              key: 'phone',
-              label: isMobile ? 'טלפון' : 'טלפון',
-              sortable: false,
-              // Make phone numbers clickable on mobile
-              render: isMobile ? (value) => (
-                <a href={`tel:${value}`} style={{ color: 'inherit', textDecoration: 'none' }}>
-                  {value}
-                </a>
-              ) : undefined
-            },
-            { key: 'pickup', label: isMobile ? 'איסוף' : 'מיקום איסוף' },
-            { key: 'date', label: 'תאריך' },
-            {
-              key: 'notes',
-              label: 'הערות',
-              sortable: false,
-              // Truncate notes on mobile
-              render: isMobile ? (value) => (
-                value && value.length > 20 ? `${value.substring(0, 20)}...` : value
-              ) : undefined
-            }
-          ]}
+          sortable={!isMobile}
+          headers={tableHeaders}
           data={clients}
         />
       </div>

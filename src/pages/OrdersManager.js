@@ -2,14 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { Calendar, Croissant, Edit2, Hash, MapPin, PackageCheck, PlusSquare, Trash2, UserPlus } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useScreenSize } from '../hooks/useScreenSize';
+import { useIndexedDB } from '../hooks/useIndexedDB';
 import Container from '../components/Container';
 import Header from '../components/Header';
 import { Button, Input, Select, Table } from '../components/components';
 import { getTodayDate, uuidv4 } from '../utils/helper';
+import { useConfirm } from '../contexts/ConfirmContext';
 
-export default function OrdersManager({ orders, setOrders, clients, recipes }) {
+export default function OrdersManager() {
   const { theme } = useTheme();
   const { isMobile, isTablet, isDesktop } = useScreenSize();
+  const { confirm } = useConfirm();
+  const [recipes, setRecipes] = useIndexedDB("recipes", []);
+  const [clients, setClients] = useIndexedDB("clients", []);
+  const [orders, setOrders] = useIndexedDB("orders", []);
 
   const recipeNames = recipes.map(r => r.name).filter(Boolean);
   const pickupOptions = ['גדרה', 'הנשיא הראשון 40', 'רחובות', 'תל אביב', 'כפר ורדים'];
@@ -57,7 +63,9 @@ export default function OrdersManager({ orders, setOrders, clients, recipes }) {
     setNewItem({ item: '', qty: '' });
   };
 
-  const removeOrder = (orderIdToRemove) => {
+  const removeOrder = async (orderIdToRemove) => {
+    const ok = await confirm('האם אתה בטוח שברצונך למחוק הזמנה זו?');
+    if (!ok) return;
     setOrders(orders.filter(o => o.orderId !== orderIdToRemove));
   };
 

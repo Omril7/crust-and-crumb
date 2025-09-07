@@ -1,72 +1,128 @@
-import React, { useState } from 'react';
-import { Package, Phone, MapPin, Calendar, FileUp, Edit2, Trash2, Plus, UserPlus, Hash, Ruler, IceCreamBowl, TriangleAlert } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Package, Trash2, Plus, Hash, Ruler, IceCreamBowl, TriangleAlert, ShieldMinus, Infinity, AlertCircle } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useScreenSize } from '../hooks/useScreenSize';
 import Container from '../components/Container';
 import Header from '../components/Header';
 import { Button, Input, Select, Table } from '../components/components';
-import { getTodayDate, uuidv4 } from '../utils/helper';
+import { formatNumber, parseDate } from '../utils/helper';
+import { useConfirm } from '../contexts/ConfirmContext';
+import { supabase } from '../supabaseClient';
+import LinearLoader from '../components/LinearLoader';
+import InventoryAlert from '../components/InventoryAlert';
 
-export default function Inventory({ inventory, setInventory }) {
+const INIT_NEW_INGREDIENT = {
+  ingredient: "",
+  qty: 1,
+  unit: "קג",
+  lowthreshold: ""
+};
+
+export default function Inventory({ user }) {
   const { theme } = useTheme();
-  const { isMobile, isTablet, width } = useScreenSize();
+  const { isMobile, isTablet } = useScreenSize();
+  const { confirm } = useConfirm();
 
-  const [newIngredient, setNewIngredient] = useState({
-    ingredient: '',
-    qty: 1,
-    unit: 'קג',
-    lowThreshold: '',
-    lastUpdate: getTodayDate()
-  });
+  const [inventory, setInventory] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const [newIngredient, setNewIngredient] = useState(INIT_NEW_INGREDIENT);
+
   const [editingQty, setEditingQty] = useState(null);
 
-  const addIngredient = () => {
-    if (!(newIngredient.ingredient && newIngredient.qty && newIngredient.unit && newIngredient.lowThreshold)) return;
+  // Load inventory
+  useEffect(() => {
+    const fetchInventory = async () => {
+      setLoading(true);
+      const { data, error } = await supabase.from("inventory").select("*").order("lastupdate", { ascending: false });
 
-    const ingredientWithId = { ...newIngredient, ingredientId: uuidv4() };
-    setInventory([...inventory, ingredientWithId]);
-    setNewIngredient({
-      ingredient: '',
-      qty: 1,
-      unit: 'קג',
-      lowThreshold: '',
-      lastUpdate: getTodayDate(),
-      ingredientId: '',
-    });
-  };
-
-  const removeIngredient = (ingredientIdToRemove) => {
-    setInventory(inventory.filter(o => o.ingredientId !== ingredientIdToRemove));
-  };
-
-  const startEditQty = (ingredientId, value) => {
-    setEditingQty({ ingredientId, value: value.toString() });
-  };
-
-  const saveEditQty = () => {
-    if (!editingQty) return;
-    const { ingredientId, value } = editingQty;
-
-    const updatedInventory = inventory.map((ingredient) => {
-      if (ingredient.ingredientId === ingredientId) {
-        return { ...ingredient, qty: value }
+      if (error) {
+        console.error("Error fetching inventory:", error.message);
       } else {
-        return ingredient
+        setInventory(data);
       }
-    })
+      setLoading(false);
+    };
 
-    setInventory(updatedInventory)
+    fetchInventory();
+  }, []);
+
+  const addIngredient = async () => {
+    if (!(newIngredient.ingredient && newIngredient.qty && newIngredient.unit && newIngredient.lowthreshold)) return;
+
+    const { data, error } = await supabase
+      .from("inventory")
+      .insert([
+        {
+          user_id: user.id,
+          ingredient: newIngredient.ingredient,
+          qty: parseFloat(newIngredient.qty),
+          unit: newIngredient.unit,
+          lowthreshold: parseFloat(newIngredient.lowthreshold)
+        }
+      ])
+      .select();
+
+    if (error) {
+      console.error("Error adding ingredient:", error.message);
+      return;
+    }
+
+    setInventory([...inventory, ...data]);
+    setNewIngredient(INIT_NEW_INGREDIENT);
+  };
+
+  const removeIngredient = async (id) => {
+    const ok = await confirm(
+      "האם אתה בטוח שברצונך למחוק מרכיב זה? מחיקה שלו תסיר אותו מכל המתכונים בהם הוא מופיע, והמתכונים ישתנו בהתאם."
+    );
+
+    if (!ok) return;
+
+    const { error } = await supabase.from("inventory").delete().eq("id", id);
+
+    if (error) {
+      console.error("Error removing ingredient:", error.message);
+      return;
+    }
+
+    setInventory(inventory.filter((o) => o.id !== id));
+  };
+
+  const startEditQty = (id, value) => {
+    setEditingQty({ id, value: value.toString() });
+  };
+
+  const saveEditQty = async () => {
+    if (!editingQty) return;
+    const { id, value } = editingQty;
+
+    const { data, error } = await supabase
+      .from("inventory")
+      .update({ qty: parseFloat(value) })
+      .eq("id", id)
+      .select("id, ingredient, qty, unit, lowthreshold, lastupdate")
+      .single(); // ensures only one row
+
+
+    if (error) {
+      console.error("Error updating qty:", error.message);
+      return;
+    }
+
+    if (!error && data) {
+      setInventory(inventory.map(i => i.id === id ? data : i));
+    }
 
     setEditingQty(null);
   };
 
   const sortedInventory = [...inventory].sort((a, b) => {
-    const aLow = parseFloat(a.qty || 0) < parseFloat(a.lowThreshold || 0);
-    const bLow = parseFloat(b.qty || 0) < parseFloat(b.lowThreshold || 0);
+    const aLow = parseFloat(a.qty || 0) < parseFloat(a.lowthreshold || 0);
+    const bLow = parseFloat(b.qty || 0) < parseFloat(b.lowthreshold || 0);
 
-    // Sort so that "low" items come first
-    if (aLow === bLow) return 0; // same status → keep original order
-    return aLow ? -1 : 1;        // if aLow is true, move it up
+    if (aLow === bLow) return 0;
+    return aLow ? -1 : 1;
   });
 
   const styles = {
@@ -179,11 +235,11 @@ export default function Inventory({ inventory, setInventory }) {
             style={{ width: '100%', fontSize: '16px' }}
           />
           <Input
-            label="חסם תחתון"
+            label="מינימום"
             type="number"
-            value={newIngredient.lowThreshold}
-            onChange={e => setNewIngredient({ ...newIngredient, lowThreshold: e.target.value })}
-            icon={<UserPlus size={18} />}
+            value={newIngredient.lowthreshold}
+            onChange={e => setNewIngredient({ ...newIngredient, lowthreshold: e.target.value })}
+            icon={<ShieldMinus size={18} />}
             min={1}
             style={{ width: '100%', fontSize: '16px' }}
           />
@@ -226,11 +282,11 @@ export default function Inventory({ inventory, setInventory }) {
             style={{ width: '100%' }}
           />
           <Input
-            label="חסם תחתון"
+            label="מינימום"
             type="number"
-            value={newIngredient.lowThreshold}
-            onChange={e => setNewIngredient({ ...newIngredient, lowThreshold: e.target.value })}
-            icon={<UserPlus size={18} />}
+            value={newIngredient.lowthreshold}
+            onChange={e => setNewIngredient({ ...newIngredient, lowthreshold: e.target.value })}
+            icon={<ShieldMinus size={18} />}
             min={1}
             style={{ width: '100%' }}
           />
@@ -272,11 +328,11 @@ export default function Inventory({ inventory, setInventory }) {
           style={{ width: '100%' }}
         />
         <Input
-          label="חסם תחתון"
+          label="מינימום"
           type="number"
-          value={newIngredient.lowThreshold}
-          onChange={e => setNewIngredient({ ...newIngredient, lowThreshold: e.target.value })}
-          icon={<UserPlus size={18} />}
+          value={newIngredient.lowthreshold}
+          onChange={e => setNewIngredient({ ...newIngredient, lowthreshold: e.target.value })}
+          icon={<ShieldMinus size={18} />}
           min={1}
           style={{ width: '100%' }}
         />
@@ -292,75 +348,75 @@ export default function Inventory({ inventory, setInventory }) {
   const getTableHeaders = () => {
     const baseHeaders = [
       {
-        key: 'alert',
-        label: '',
-        sortable: false,
-        render: (_, row) => (
+        key: "alert",
+        label: "",
+        render: (_, row) =>
+          parseFloat(row.qty || 0) < parseFloat(row.lowthreshold || 0) ? (
+            <TriangleAlert size={isMobile ? 18 : 20} color="orange" />
+          ) : null
+      },
+      { key: "ingredient", label: "מרכיב" },
+      {
+        key: "qty",
+        label: "כמות",
+        render: (value, row) => (
           <>
-            {(parseFloat(row.qty || 0) < parseFloat(row.lowThreshold || 0)) ? (
-              <TriangleAlert size={isMobile ? 18 : 20} color="orange" />
+            {value < 0 ? (
+              <Infinity />
             ) : (
-              <></>
+              <div
+                style={{ cursor: "pointer" }}
+                onClick={() => startEditQty(row.id, row.qty)}
+              >
+                {editingQty?.id === row.id ? (
+                  <input
+                    type="number"
+                    value={editingQty.value}
+                    onChange={(e) =>
+                      setEditingQty({ id: row.id, value: e.target.value })
+                    }
+                    onBlur={saveEditQty}
+                    autoFocus
+                    style={styles.editInput}
+                  />
+                ) : formatNumber(value)
+                }
+              </div>
             )}
           </>
+
         )
       },
-      { key: 'ingredient', label: 'מרכיב' },
-      {
-        key: 'qty',
-        label: 'כמות',
-        render: (value, row, i) => (
-          <div
-            style={{ cursor: 'pointer' }}
-            onClick={() => startEditQty(row.ingredientId, row.qty)}
-          >
-            {editingQty?.ingredientId === row.ingredientId ? (
-              <input
-                type="number"
-                value={editingQty.value}
-                onChange={(e) =>
-                  setEditingQty({ ingredientId: row.ingredientId, value: e.target.value })
-                }
-                onBlur={saveEditQty}
-                autoFocus
-                style={styles.editInput}
-              />
-            ) : (
-              value
-            )}
-          </div>
-        )
-      },
-      { key: 'unit', label: 'מידה' },
+      { key: "unit", label: "מידה" }
     ];
 
-    // Add additional columns for tablet and desktop
     if (!isMobile) {
       baseHeaders.push(
-        { key: 'lowThreshold', label: 'חסם תחתון' },
-        { key: 'lastUpdate', label: 'עידכון אחרון' }
+        { key: "lowthreshold", label: "מינימום", render: (value, _) => value < 0 ? <Infinity /> : value },
+        {
+          key: "lastupdate",
+          label: "עידכון אחרון",
+          render: (value, row) => parseDate(value)
+        }
       );
     }
 
-    // Add remove action column
     baseHeaders.push({
-      key: 'remove',
-      label: 'מחק',
-      sortable: false,
+      key: "remove",
+      label: "מחק",
       render: (_, row) => (
         <div
           style={{
-            cursor: 'pointer',
-            color: 'red',
-            padding: isMobile ? '8px' : '4px',
-            display: 'flex',
-            justifyContent: 'center'
+            cursor: "pointer",
+            color: "red",
+            display: "flex",
+            justifyContent: "center"
           }}
-          onClick={() => removeIngredient(row.ingredientId)}
+          onClick={() => removeIngredient(row.id)}
           title="מחק מרכיב"
           role="button"
           tabIndex={0}
-          onKeyDown={(e) => e.key === 'Enter' && removeIngredient(row.ingredientId)}
+          onKeyDown={(e) => e.key === "Enter" && removeIngredient(row.id)}
         >
           <Trash2 size={isMobile ? 18 : 20} />
         </div>
@@ -382,6 +438,7 @@ export default function Inventory({ inventory, setInventory }) {
           <Plus size={isMobile ? 18 : 20} />
           הוספת מלאי
         </h3>
+        <InventoryAlert />
 
         <div style={
           isMobile ? styles.mobileFormGrid :
@@ -393,14 +450,16 @@ export default function Inventory({ inventory, setInventory }) {
       </section>
 
       {/* Inventory Table */}
-      <Table
-        title="טבלת מלאי"
-        sortable={true}
-        headers={getTableHeaders()}
-        data={sortedInventory}
-        responsive={true}
-        mobileBreakpoint={768}
-      />
+      {loading ? (
+        <LinearLoader />
+      ) : (
+        <Table
+          title="טבלת מלאי"
+          sortable={true}
+          headers={getTableHeaders()}
+          data={sortedInventory}
+        />
+      )}
 
     </Container>
   );

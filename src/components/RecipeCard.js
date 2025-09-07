@@ -4,9 +4,9 @@ import { useScreenSize } from '../hooks/useScreenSize';
 
 const RecipeCard = ({ recipe, idx, selectedRecipe, setSelectedRecipe }) => {
   const { theme } = useTheme();
-  const { isMobile, isTablet, isDesktop } = useScreenSize();
+  const { isMobile, isTablet } = useScreenSize();
 
-  const isSelected = selectedRecipe === recipe.name;
+  const isSelected = selectedRecipe === recipe.id;
 
   const styles = {
     card: {
@@ -70,14 +70,14 @@ const RecipeCard = ({ recipe, idx, selectedRecipe, setSelectedRecipe }) => {
     <div
       key={idx}
       style={styles.card}
-      onClick={() => setSelectedRecipe(recipe.name)}
+      onClick={() => setSelectedRecipe(recipe.id)}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
       <h3 style={styles.title}>{recipe.name}</h3>
-      <p style={styles.info}>מחיר: ₪{recipe.sellingPrice || 'לא הוגדר'}</p>
-      <p style={styles.info}>משקל בצק: {recipe.doughWeight} גרם</p>
-      <p style={styles.info}>מרכיבים: {recipe.ingredients.length}</p>
+      <p style={styles.info}>מחיר: ₪{recipe.sellingprice || 'לא הוגדר'}</p>
+      <p style={styles.info}>משקל בצק: {recipe.doughweight} גרם</p>
+      <p style={styles.info}>מרכיבים: {recipe.recipe_ingredients?.length || 0}</p>
     </div>
   );
 }

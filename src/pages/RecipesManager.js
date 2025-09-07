@@ -1,135 +1,212 @@
 import React, { useState, useEffect } from 'react';
 import Container from '../components/Container';
 import Header from '../components/Header';
-import { CookingPot, Plus, Trash2 } from 'lucide-react';
+import { CookingPot, Croissant, Percent, Plus, Trash2, Weight } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useScreenSize } from '../hooks/useScreenSize';
 import RecipeCard from '../components/RecipeCard';
 import { Button, Input, Table } from '../components/components';
+import { useConfirm } from '../contexts/ConfirmContext';
+import { supabase } from '../supabaseClient';
+import LinearLoader from '../components/LinearLoader';
 
-export default function RecipesManager({ recipes, setRecipes }) {
+const INIT_NEW_INGREDIENT = {
+  ingredient: '',
+  bakerspercent: ''
+};
+
+export default function RecipesManager({ user }) {
   const { theme } = useTheme();
-  const { isMobile, isTablet, isDesktop } = useScreenSize();
+  const { isMobile, isTablet } = useScreenSize();
+  const { confirm } = useConfirm();
+
+  const [recipes, setRecipes] = useState([]);
+  const [inventory, setInventory] = useState([]);
   const [selectedRecipe, setSelectedRecipe] = useState(null);
   const [newRecipeName, setNewRecipeName] = useState('');
-  const [newIngredient, setNewIngredient] = useState({ ingredient: '', bakersPercent: '', weight: '' });
+  const [newIngredient, setNewIngredient] = useState(INIT_NEW_INGREDIENT);
   const [editingBakersPercent, setEditingBakersPercent] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  const isAddDisabled = !(newIngredient.ingredient && newIngredient.bakersPercent && newIngredient.weight);
+  const isAddDisabled = !(newIngredient.ingredient && newIngredient.bakerspercent);
 
-  const addNewRecipeName = () => {
+  // ---------------- Fetch data ----------------
+  useEffect(() => {
+    fetchRecipes();
+    fetchInventory();
+  }, []);
+
+  const fetchRecipes = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('recipes')
+      .select('id, name, sellingprice, doughweight, recipe_ingredients(id, ingredient_id, bakerspercent, inventory(ingredient))')
+      .eq('user_id', user.id);
+
+    if (error) console.error(error);
+    else setRecipes(data || []);
+    setLoading(false);
+  };
+
+  const fetchInventory = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('inventory')
+      .select('id, ingredient')
+      .eq('user_id', user.id);
+
+    if (error) console.error(error);
+    else setInventory(data || []);
+    setLoading(false);
+  };
+
+  // ---------------- CRUD actions ----------------
+  const addNewRecipeName = async () => {
     if (!newRecipeName) return;
-    const newRecipe = {
-      name: newRecipeName,
-      sellingPrice: null,
-      doughWeight: 750, // Default dough weight
-      ingredients: []
-    };
+    const { data, error } = await supabase
+      .from('recipes')
+      .insert([{ user_id: user.id, name: newRecipeName, doughweight: 750, sellingprice: 0 }])
+      .select()
+      .single();
+
+    if (error) return console.error(error);
+    const newRecipe = { ...data, recipe_ingredients: [] };
     setRecipes([...recipes, newRecipe]);
-    setSelectedRecipe(newRecipeName);
+    setSelectedRecipe(newRecipe);
     setNewRecipeName('');
   };
 
-  const addIngredientToRecipe = () => {
+  const addIngredientToRecipe = async () => {
     if (!selectedRecipe || !newIngredient.ingredient) return;
 
-    const updatedRecipes = recipes.map(recipe => {
-      if (recipe.name === selectedRecipe) {
-        return {
-          ...recipe,
-          ingredients: [...recipe.ingredients, { ...newIngredient }]
-        };
-      }
-      return recipe;
+    // find inventory row
+    const inv = inventory.find(i => i.ingredient === newIngredient.ingredient);
+    if (!inv) return alert("Ingredient not found in inventory");
+
+    const { data, error } = await supabase
+      .from('recipe_ingredients')
+      .insert([{
+        recipe_id: selectedRecipe.id,
+        ingredient_id: inv.id,
+        bakerspercent: Number(newIngredient.bakerspercent)
+      }])
+      .select('id, ingredient_id, bakerspercent, inventory(ingredient)')
+      .single();
+
+    if (error) return console.error(error);
+
+    // Update the recipes array
+    const updatedRecipes = recipes.map(r =>
+      r.id === selectedRecipe.id
+        ? { ...r, recipe_ingredients: [...r.recipe_ingredients, data] }
+        : r
+    );
+    setRecipes(updatedRecipes);
+
+    // Update selectedRecipe with the new ingredient
+    setSelectedRecipe({
+      ...selectedRecipe,
+      recipe_ingredients: [...selectedRecipe.recipe_ingredients, data]
     });
 
-    setRecipes(updatedRecipes);
-    setNewIngredient({ ingredient: '', bakersPercent: '', weight: '', unit: '' });
+    setNewIngredient(INIT_NEW_INGREDIENT);
   };
 
-  const removeIngredient = (ingredientIndex) => {
-    const updatedRecipes = recipes.map(recipe => {
-      if (recipe.name === selectedRecipe) {
-        return {
-          ...recipe,
-          ingredients: recipe.ingredients.filter((_, index) => index !== ingredientIndex)
-        };
-      }
-      return recipe;
+  const removeIngredient = async (id) => {
+    const { error } = await supabase.from('recipe_ingredients').delete().eq('id', id);
+    if (error) return console.error(error);
+
+    // Update the recipes array
+    const updatedRecipes = recipes.map(r =>
+      r.id === selectedRecipe.id
+        ? { ...r, recipe_ingredients: r.recipe_ingredients.filter(ing => ing.id !== id) }
+        : r
+    );
+    setRecipes(updatedRecipes);
+
+    // Update selectedRecipe
+    setSelectedRecipe({
+      ...selectedRecipe,
+      recipe_ingredients: selectedRecipe.recipe_ingredients.filter(ing => ing.id !== id)
     });
-    setRecipes(updatedRecipes);
   };
 
-  const startEditBakersPercent = (index, value) => {
-    setEditingBakersPercent({ index, value: value.toString() });
+  const startEditBakersPercent = (id, value) => {
+    setEditingBakersPercent({ id, value: value.toString() });
   };
 
-  const saveEditBakersPercent = () => {
+  const saveEditBakersPercent = async () => {
     if (!editingBakersPercent) return;
-    const { index, value } = editingBakersPercent;
+    const { id, value } = editingBakersPercent;
 
-    const updatedRecipes = recipes.map(recipe => {
-      if (recipe.name === selectedRecipe) {
-        const updatedIngredients = [...recipe.ingredients];
-        updatedIngredients[index] = {
-          ...updatedIngredients[index],
-          bakersPercent: value
-        };
-        return {
-          ...recipe,
-          ingredients: updatedIngredients
-        };
-      }
-      return recipe;
+    const { error } = await supabase
+      .from('recipe_ingredients')
+      .update({ bakerspercent: Number(value) })
+      .eq('id', id);
+
+    if (error) return console.error(error);
+
+    // Update the specific ingredient in both recipes array and selectedRecipe
+    const updatedRecipes = recipes.map(r =>
+      r.id === selectedRecipe.id
+        ? {
+          ...r,
+          recipe_ingredients: r.recipe_ingredients.map(ing =>
+            ing.id === id ? { ...ing, bakerspercent: Number(value) } : ing
+          )
+        }
+        : r
+    );
+    setRecipes(updatedRecipes);
+
+    // Update selectedRecipe
+    setSelectedRecipe({
+      ...selectedRecipe,
+      recipe_ingredients: selectedRecipe.recipe_ingredients.map(ing =>
+        ing.id === id ? { ...ing, bakerspercent: Number(value) } : ing
+      )
     });
 
-    setRecipes(updatedRecipes);
     setEditingBakersPercent(null);
   };
 
-  const updateRecipeProperty = (propertyName, value) => {
+  const updateRecipeField = async (field, value) => {
+    try {
+      const { error } = await supabase
+        .from("recipes")
+        .update({ [field]: value })
+        .eq("id", selectedRecipe.id);
+
+      if (error) throw error;
+
+      // Update both recipes array and selectedRecipe
+      const updatedRecipes = recipes.map(r =>
+        r.id === selectedRecipe.id ? { ...r, [field]: value } : r
+      );
+      setRecipes(updatedRecipes);
+
+      setSelectedRecipe({ ...selectedRecipe, [field]: value });
+    } catch (err) {
+      console.error("Error updating recipe:", err.message);
+    }
+  };
+
+  const removeRecipe = async () => {
     if (!selectedRecipe) return;
+    const ok = await confirm('האם אתה בטוח שברצונך למחוק מתכון זה?');
+    if (!ok) return;
 
-    const updatedRecipes = recipes.map(recipe => {
-      if (recipe.name === selectedRecipe) {
-        return {
-          ...recipe,
-          [propertyName]: value
-        };
-      }
-      return recipe;
-    });
+    const { error } = await supabase.from('recipes').delete().eq('id', selectedRecipe.id);
+    if (error) return console.error(error);
 
-    setRecipes(updatedRecipes);
-  };
-
-  const handleDoughWeightChange = (e) => {
-    const val = e.target.value;
-    if (!val || isNaN(val)) return;
-    updateRecipeProperty('doughWeight', Number(val));
-  };
-
-  const handleSellingPriceChange = (e) => {
-    updateRecipeProperty('sellingPrice', e.target.value);
-  };
-
-  const removeRecipe = () => {
-    if (!selectedRecipe) return;
-    const filtered = recipes.filter(r => r.name !== selectedRecipe);
-    setRecipes(filtered);
+    setRecipes(recipes.filter(r => r.id !== selectedRecipe.id));
     setSelectedRecipe(null);
   };
 
-  // Get current recipe data
-  const currentRecipe = recipes.find(r => r.name === selectedRecipe);
-  const selectedRecipeItems = currentRecipe ? currentRecipe.ingredients : [];
-  const doughWeight = currentRecipe ? currentRecipe.doughWeight : null;
-  const sellingPrice = currentRecipe ? currentRecipe.sellingPrice || '' : '';
-
-  const totalPercent = selectedRecipeItems.reduce((sum, ingredient) => sum + (Number(ingredient.bakersPercent) || 0), 0);
-  const scaleFactor = (doughWeight && totalPercent > 0)
-    ? doughWeight / (totalPercent / 100)
-    : 0;
+  const handleRecipeSelect = (recipeId) => {
+    const recipe = recipes.find(r => r.id === recipeId);
+    setSelectedRecipe(recipe);
+  };
 
   const styles = {
     section: {
@@ -212,7 +289,6 @@ export default function RecipesManager({ recipes, setRecipes }) {
       animation: 'slideUp 0.3s ease',
       margin: isMobile ? '0' : 'auto',
       position: 'relative',
-      // Ensure proper scrolling on mobile
       WebkitOverflowScrolling: 'touch',
     },
     modalHeader: {
@@ -264,33 +340,37 @@ export default function RecipesManager({ recipes, setRecipes }) {
         </div>
       </section>
 
-      <section style={{ 
-        ...styles.section, 
+      <section style={{
+        ...styles.section,
         marginTop: isMobile ? '16px' : '20px',
         marginBottom: isMobile ? '20px' : '0'
       }} aria-label="רשימת מתכונים">
         <h3 style={styles.sectionHeader}>
           רשימת מתכונים ({recipes.length})
         </h3>
-        <div style={styles.recipeGrid}>
-          {recipes.map((recipe, idx) => (
-            <RecipeCard
-              key={recipe.name}
-              recipe={recipe}
-              idx={idx}
-              selectedRecipe={selectedRecipe}
-              setSelectedRecipe={setSelectedRecipe}
-            />
-          ))}
-        </div>
+        {loading ? (
+          <LinearLoader />
+        ) : (
+          <div style={styles.recipeGrid}>
+            {recipes.map((recipe, idx) => (
+              <RecipeCard
+                key={recipe.name}
+                recipe={recipe}
+                idx={idx}
+                selectedRecipe={selectedRecipe?.id || null}
+                setSelectedRecipe={handleRecipeSelect}
+              />
+            ))}
+          </div>
+        )}
       </section>
 
-      {selectedRecipe && currentRecipe && (
+      {selectedRecipe && (
         <div style={styles.modalBackdrop} onClick={() => setSelectedRecipe(null)}>
           <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
             {/* Header */}
             <div style={styles.modalHeader}>
-              <h2 style={styles.modalTitle}>{selectedRecipe}</h2>
+              <h2 style={styles.modalTitle}>{selectedRecipe.name}</h2>
               <button
                 onClick={() => setSelectedRecipe(null)}
                 style={styles.closeButton}
@@ -304,16 +384,24 @@ export default function RecipesManager({ recipes, setRecipes }) {
               <Input
                 label="משקל בצק (גרם)"
                 type="number"
-                value={doughWeight ?? ''}
-                onChange={handleDoughWeightChange}
+                value={selectedRecipe.doughweight || ""}
+                onChange={(e) =>
+                  setSelectedRecipe({ ...selectedRecipe, doughweight: e.target.value })
+                }
+                onBlur={() => updateRecipeField("doughweight", selectedRecipe.doughweight)}
                 min={1}
+                icon={<Weight size={isMobile ? 20 : 18} />}
               />
               <Input
                 label="מחיר מכירה"
                 type="number"
-                value={sellingPrice}
-                onChange={handleSellingPriceChange}
+                value={selectedRecipe.sellingprice || ""}
+                onChange={(e) =>
+                  setSelectedRecipe({ ...selectedRecipe, sellingprice: e.target.value })
+                }
+                onBlur={() => updateRecipeField("sellingprice", selectedRecipe.sellingprice)}
                 min={1}
+                icon={<span style={{ fontWeight: 'bold', fontSize: isMobile ? '1.1rem' : '1.3rem' }}>₪</span>}
               />
               <Button
                 title={"מחק מתכון"}
@@ -334,18 +422,17 @@ export default function RecipesManager({ recipes, setRecipes }) {
                   label="מרכיב"
                   value={newIngredient.ingredient}
                   onChange={(e) => setNewIngredient({ ...newIngredient, ingredient: e.target.value })}
+                  icon={<Croissant size={isMobile ? 20 : 18} />}
+                  style={{ width: '100%' }}
+                  list="ingredient-list"
+                  dataList={inventory.map(client => client.ingredient)}
                 />
                 <Input
-                  label="בייקר %"
+                  label="בייקר"
                   type="number"
-                  value={newIngredient.bakersPercent}
-                  onChange={(e) => setNewIngredient({ ...newIngredient, bakersPercent: e.target.value })}
-                />
-                <Input
-                  label="משקל (גרם)"
-                  type="number"
-                  value={newIngredient.weight}
-                  onChange={(e) => setNewIngredient({ ...newIngredient, weight: e.target.value })}
+                  value={newIngredient.bakerspercent}
+                  onChange={(e) => setNewIngredient({ ...newIngredient, bakerspercent: e.target.value })}
+                  icon={<Percent size={isMobile ? 20 : 18} />}
                 />
                 <Button
                   title={isAddDisabled ? 'נא למלא את כל השדות הדרושים' : 'הוסף'}
@@ -361,23 +448,23 @@ export default function RecipesManager({ recipes, setRecipes }) {
               headers={[
                 { key: 'ingredient', label: 'מרכיב' },
                 {
-                  key: 'bakersPercent',
+                  key: 'bakerspercent',
                   label: 'אחוזי בייקר',
                   render: (value, row, i) => (
                     <div
                       style={{ cursor: 'pointer' }}
-                      onClick={() => startEditBakersPercent(i, row.bakersPercent)}
+                      onClick={() => startEditBakersPercent(row.id, row.bakerspercent)}
                     >
-                      {editingBakersPercent?.index === i ? (
+                      {editingBakersPercent?.id === row.id ? (
                         <input
                           type="number"
                           value={editingBakersPercent.value}
                           onChange={(e) =>
-                            setEditingBakersPercent({ index: i, value: e.target.value })
+                            setEditingBakersPercent({ id: row.id, value: e.target.value })
                           }
                           onBlur={saveEditBakersPercent}
                           autoFocus
-                          style={{ 
+                          style={{
                             width: isMobile ? '50px' : '60px',
                             fontSize: isMobile ? '14px' : '16px'
                           }}
@@ -391,24 +478,28 @@ export default function RecipesManager({ recipes, setRecipes }) {
                 {
                   key: 'weight',
                   label: 'משקל (גרם)',
-                  render: (_, row) =>
-                    row.bakersPercent
-                      ? ((Number(row.bakersPercent) / 100) * scaleFactor).toFixed(0)
-                      : ''
+                  render: (_, row) => {
+                    const totalPercent = selectedRecipe.recipe_ingredients.reduce((sum, ing) => sum + (Number(ing.bakerspercent) || 0), 0);
+                    return row.bakerspercent && totalPercent > 0
+                      ? ((Number(row.bakerspercent) / 100) *
+                        (selectedRecipe.doughweight / (totalPercent / 100))
+                      ).toFixed(0)
+                      : '';
+                  }
                 },
                 {
                   key: 'remove',
                   label: 'מחק',
-                  render: (_, __, i) => (
+                  render: (_, row) => (
                     <div
-                      style={{ 
-                        cursor: 'pointer', 
+                      style={{
+                        cursor: 'pointer',
                         color: 'red',
                         padding: isMobile ? '8px' : '4px',
                         display: 'flex',
                         justifyContent: 'center'
                       }}
-                      onClick={() => removeIngredient(i)}
+                      onClick={() => removeIngredient(row.id)}
                       role="button"
                     >
                       <Trash2 size={isMobile ? 18 : 20} />
@@ -416,7 +507,10 @@ export default function RecipesManager({ recipes, setRecipes }) {
                   )
                 }
               ]}
-              data={selectedRecipeItems}
+              data={selectedRecipe.recipe_ingredients.map(ingredient => ({
+                ...ingredient,
+                ingredient: ingredient.inventory?.ingredient || 'Unknown'
+              }))}
             />
 
           </div>

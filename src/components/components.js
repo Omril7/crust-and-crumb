@@ -7,6 +7,7 @@ export const Input = ({
   label,
   value,
   onChange,
+  onBlur,
   type = 'text',
   placeholder = '',
   min,
@@ -110,11 +111,14 @@ export const Input = ({
           min={min}
           placeholder={placeholder}
           onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
+          onBlur={() => {
+            setIsFocused(false);
+            if (onBlur) onBlur(); // <-- only call if provided
+          }}
         />
         {list && dataList && (
           <datalist id={list}>
-            {dataList.slice(0, 10).map((item, idx) => (
+            {dataList.map((item, idx) => (
               <option key={idx} value={item} />
             ))}
           </datalist>
@@ -307,28 +311,39 @@ export const Table = ({ title, headers, data, sortable = false }) => {
   const sortedData = useMemo(() => {
     if (!sortConfig.key || !sortable) return data;
 
+    // Helper to normalize qty/minimum by unit
+    const normalize = (value, unit) => {
+      if (unit === 'קג') return parseFloat(value) * 1000;
+      return parseFloat(value);
+    };
+
     return [...data].sort((a, b) => {
+      // For qty and lowThreshold, normalize by unit
+      if (['qty', 'lowThreshold'].includes(sortConfig.key)) {
+        const aVal = normalize(a[sortConfig.key], a.unit);
+        const bVal = normalize(b[sortConfig.key], b.unit);
+        return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+
+      // ...existing string/number sorting...
       const aVal = a[sortConfig.key];
       const bVal = b[sortConfig.key];
 
-      // Handle null/undefined values
       if (aVal == null && bVal == null) return 0;
       if (aVal == null) return 1;
       if (bVal == null) return -1;
 
-      // Handle numbers
       if (!isNaN(aVal) && !isNaN(bVal)) {
         const numA = parseFloat(aVal);
         const numB = parseFloat(bVal);
         return sortConfig.direction === 'asc' ? numA - numB : numB - numA;
       }
 
-      // Handle strings
       const strA = String(aVal).toLowerCase();
       const strB = String(bVal).toLowerCase();
 
       if (sortConfig.direction === 'asc') {
-        return strA.localeCompare(strB, 'he'); // Hebrew locale support
+        return strA.localeCompare(strB, 'he');
       } else {
         return strB.localeCompare(strA, 'he');
       }
@@ -369,8 +384,8 @@ export const Table = ({ title, headers, data, sortable = false }) => {
     tableWrapper: {
       gridColumn: '1 / -1',
       borderRadius: isMobile ? 8 : 12,
-      boxShadow: isMobile 
-        ? '0 2px 8px rgba(0,0,0,0.08)' 
+      boxShadow: isMobile
+        ? '0 2px 8px rgba(0,0,0,0.08)'
         : theme.boxShadow || '0 4px 12px rgba(0,0,0,0.1)',
       backgroundColor: theme.surface || '#fafafa',
       maxHeight: isMobile ? 'calc(100vh - 300px)' : isTablet ? 350 : 400,
@@ -518,7 +533,7 @@ export const Table = ({ title, headers, data, sortable = false }) => {
         </thead>
         <tbody>
           {sortedData.map((row, rowIndex) => (
-            <tr 
+            <tr
               key={rowIndex}
               style={isMobile ? styles.mobileRow : {}}
             >

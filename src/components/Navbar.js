@@ -1,10 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useScreenSize } from '../hooks/useScreenSize'; // or useBreakpoints
+import { useNavigate, useLocation } from 'react-router-dom';
+import { supabase } from '../supabaseClient';
 
-const Navbar = ({ page, setPage }) => {
+const NAV_ITEMS = [
+  { id: '', label: 'בית' },
+  { id: 'recipes', label: 'מתכונים' },
+  // { id: 'clients', label: 'לקוחות' },
+  // { id: 'orders', label: 'הזמנות' },
+  { id: 'bakePlanning', label: 'תכנון אפייה' },
+  { id: 'inventory', label: 'מלאי' }
+];
+
+const Navbar = ({ onLogout }) => {
   const { theme } = useTheme();
-  const { isMobile, isTablet, isDesktop } = useScreenSize();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const currentPath = location.pathname.replace("/", "");
+  const currentPageId = NAV_ITEMS.find(item => item.id === currentPath)?.id;
+  const currentPageLabel = NAV_ITEMS.find(item => item.id === currentPath)?.label || "";
+
+  const { isMobile, isTablet } = useScreenSize();
+
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   // Close mobile menu when switching to larger screens
@@ -93,22 +111,17 @@ const Navbar = ({ page, setPage }) => {
     }
   };
 
-  const navItems = [
-    { id: 'recipes', label: 'מתכונים' },
-    { id: 'clients', label: 'לקוחות' },
-    { id: 'orders', label: 'הזמנות' },
-    { id: 'bakePlanning', label: 'תכנון אפייה' },
-    { id: 'inventory', label: 'מלאי' }
-  ];
-
-  const currentPageLabel = navItems.find(item => item.id === page)?.label || '';
-
   const handleButtonClick = (itemId) => {
-    setPage(itemId);
     if (isMobile) {
       setIsMenuOpen(false);
     }
+    navigate(itemId);
   };
+
+  const handleLogout = async () => {
+    let { error } = await supabase.auth.signOut();
+    onLogout();
+  }
 
   if (isMobile) {
     return (
@@ -130,21 +143,21 @@ const Navbar = ({ page, setPage }) => {
             </button>
           </div>
           <div style={styles.mobileMenu}>
-            {navItems.map((item) => (
+            {NAV_ITEMS.map((item) => (
               <button
                 key={item.id}
                 onClick={() => handleButtonClick(item.id)}
                 style={{
                   ...styles.button,
-                  ...(page === item.id ? styles.activeButton : {}),
+                  ...(currentPageId === item.id ? styles.activeButton : {}),
                 }}
                 onMouseEnter={(e) => {
-                  if (page !== item.id) {
+                  if (currentPageId !== item.id) {
                     e.target.style.backgroundColor = styles.hoverEffect.backgroundColor;
                   }
                 }}
                 onMouseLeave={(e) => {
-                  if (page !== item.id) {
+                  if (currentPageId !== item.id) {
                     e.target.style.backgroundColor = 'transparent';
                   }
                 }}
@@ -152,6 +165,14 @@ const Navbar = ({ page, setPage }) => {
                 {item.label}
               </button>
             ))}
+            <button
+              onClick={handleLogout}
+              style={{ ...styles.button, color: theme.accent.error }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = styles.hoverEffect.backgroundColor}
+              onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+            >
+              התנתק
+            </button>
           </div>
         </div>
       </nav>
@@ -161,21 +182,21 @@ const Navbar = ({ page, setPage }) => {
   return (
     <nav style={styles.navbar}>
       <div style={styles.desktopNav}>
-        {navItems.map((item) => (
+        {NAV_ITEMS.map((item) => (
           <button
             key={item.id}
             onClick={() => handleButtonClick(item.id)}
             style={{
               ...styles.button,
-              ...(page === item.id ? styles.activeButton : {}),
+              ...(currentPageId === item.id ? styles.activeButton : {}),
             }}
             onMouseEnter={(e) => {
-              if (page !== item.id) {
+              if (currentPageId !== item.id) {
                 e.target.style.backgroundColor = styles.hoverEffect.backgroundColor;
               }
             }}
             onMouseLeave={(e) => {
-              if (page !== item.id) {
+              if (currentPageId !== item.id) {
                 e.target.style.backgroundColor = 'transparent';
               }
             }}
@@ -183,6 +204,14 @@ const Navbar = ({ page, setPage }) => {
             {item.label}
           </button>
         ))}
+        <button
+          onClick={handleLogout}
+          style={{ ...styles.button, color: theme.accent.error }}
+          onMouseEnter={(e) => e.target.style.backgroundColor = styles.hoverEffect.backgroundColor}
+          onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+        >
+          התנתק
+        </button>
       </div>
     </nav>
   );
