@@ -3,6 +3,7 @@ import { CalendarDays, BookOpen, Package } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { supabase } from '../supabaseClient';
 import CircularLoader from '../components/CircularLoader';
+import { Navigate } from 'react-router-dom';
 
 const Home = ({ user }) => {
   const { theme } = useTheme();
@@ -112,9 +113,7 @@ const Home = ({ user }) => {
   };
 
   if (!user) {
-    return (
-      <>Your problem</>
-    )
+    return <Navigate to="/login" replace />;
   }
 
   return (
