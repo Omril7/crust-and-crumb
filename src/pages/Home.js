@@ -112,10 +112,6 @@ const Home = ({ user }) => {
     }
   };
 
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
   return (
     <div style={styles.container}>
       {/* Main Content */}
