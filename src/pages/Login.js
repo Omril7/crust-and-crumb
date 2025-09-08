@@ -6,25 +6,33 @@ import { useScreenSize } from '../hooks/useScreenSize';
 import Container from '../components/Container';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function Login({ onLogin }) {
+  const { theme } = useTheme();
   const { isMobile, isTablet } = useScreenSize();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [loginError, setLoginError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!(email && password)) {
+      setLoginError('לא בא לך למלא גם אימייל וגם סיסמא? פשוט טיפש....');
+      return;
+    }
 
     setIsLoading(true);
+    setLoginError("");
 
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      alert(error.message);
+      setLoginError('טעית באחד מפרטי ההזדהות טמבל!');
+      setIsLoading(false);
     } else {
       onLogin(data.session);
       setIsLoading(false);
@@ -101,16 +109,6 @@ export default function Login({ onLogin }) {
       marginRight: '0.5rem',
       display: 'block',
     },
-    submitError: {
-      background: '#fef2f2',
-      border: '1px solid #fecaca',
-      color: '#dc2626',
-      padding: '0.75rem',
-      borderRadius: '8px',
-      fontSize: '0.9rem',
-      marginBottom: '1rem',
-      textAlign: 'center',
-    },
     button: {
       display: 'flex',
       alignItems: 'center',
@@ -157,7 +155,18 @@ export default function Login({ onLogin }) {
       background: 'linear-gradient(135deg, rgba(139, 105, 20, 0.1) 0%, rgba(184, 134, 11, 0.05) 100%)',
       borderRadius: '50%',
       pointerEvents: 'none',
-    }
+    },
+    submitError: {
+      background: `${theme.accent.error}33`,
+      border: `1px solid ${theme.accent.error}`,
+      color: theme.accent.error,
+      padding: '0.75rem',
+      borderRadius: '8px',
+      fontSize: '0.9rem',
+      marginBottom: '1rem',
+      textAlign: 'center',
+      animation: loginError ? 'shake 0.4s ease-in-out' : 'none',
+    },
   };
 
   return (
@@ -170,6 +179,12 @@ export default function Login({ onLogin }) {
             <h2 style={styles.title}>התחברות</h2>
             <p style={styles.subtitle}>היכנס לחשבון שלך כדי להמשיך</p>
           </div>
+
+          {loginError && (
+            <div style={styles.submitError}>
+              {loginError}
+            </div>
+          )}
 
           <div style={styles.inputGroup}>
             <Input

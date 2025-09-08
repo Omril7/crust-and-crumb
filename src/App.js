@@ -148,7 +148,7 @@ function AppContent() {
     <div style={{ fontFamily: 'Arial', direction: 'rtl', }}>
       {updating ? (
         <div style={styles.updating}>
-          מעדכן מלאי… אנא המתן
+          מעדכן מלאי… תחכה שנייה
         </div>
       ) : (
         <Router>
