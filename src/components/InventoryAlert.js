@@ -42,7 +42,7 @@ function InventoryAlert() {
         lineHeight: 1.4,
         flex: 1
       }}>
-        אם יש מוצר עם מלאי בלתי מוגבל (כמו מים), ניתן להזין <strong>1-</strong> בערך המלאי
+        אם יש מוצר עם מלאי בלתי מוגבל (כמו מים), ניתן להזין <strong>1000-</strong> בערך המלאי
       </span>
 
       <button

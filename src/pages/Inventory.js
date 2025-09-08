@@ -253,7 +253,7 @@ export default function Inventory({ user }) {
         label: "כמות",
         render: (value, row) => (
           <>
-            {value < 0 ? (
+            {value === -1000 ? (
               <Infinity />
             ) : (
               <div
@@ -284,7 +284,7 @@ export default function Inventory({ user }) {
 
     if (!isMobile) {
       baseHeaders.push(
-        { key: "lowthreshold", label: "מינימום", render: (value, _) => value < 0 ? <Infinity /> : value },
+        { key: "lowthreshold", label: "מינימום", render: (value, _) => value === -1000 ? <Infinity /> : value },
         {
           key: "lastupdate",
           label: "עידכון אחרון",

@@ -36,7 +36,7 @@ export default function Login({ onLogin }) {
     } else {
       onLogin(data.session);
       setIsLoading(false);
-      navigate("/recipes");
+      navigate("/");
     }
   };
 

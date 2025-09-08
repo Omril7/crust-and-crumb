@@ -1,21 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Login from './pages/Login';
-// import ClientsManager from './pages/ClientsManager';
-import RecipesManager from './pages/RecipesManager';
-// import OrdersManager from './pages/OrdersManager';
-import BakePlanningManager from './pages/BakePlanningManager';
-import Inventory from './pages/Inventory';
-import Navbar from './components/Navbar';
 import './App.css';
-import { ConfirmProvider } from './contexts/ConfirmContext';
-import { useSupabaseSession } from './hooks/useSupabaseSession';
-import ProtectedRoute from './components/ProtectedRoute';
+import BakePlanningManager from './pages/BakePlanningManager';
 import Home from './pages/Home';
+import Inventory from './pages/Inventory';
+import Login from './pages/Login';
+import RecipesManager from './pages/RecipesManager';
+// import ClientsManager from './pages/ClientsManager';
+// import OrdersManager from './pages/OrdersManager';
+import Navbar from './components/Navbar';
+import ProtectedRoute from './components/ProtectedRoute';
+import { useSupabaseSession } from './hooks/useSupabaseSession';
 import { supabase } from './supabaseClient';
-import { AlertProvider } from './contexts/AlertContext';
 
-function AppContent() {
+function App() {
   const { session, setSession } = useSupabaseSession();
   const [updating, setUpdating] = useState(false);
 
@@ -45,7 +43,8 @@ function AppContent() {
                 bakerspercent,
                 ingredient:ingredient_id(
                   id,
-                  unit
+                  unit,
+                  qty
                 )
               )
             )
@@ -78,19 +77,21 @@ function AppContent() {
           const scaleFactor = recipe.doughweight / (totalPercent / 100);
 
           ingredients.forEach(ri => {
-            const weightInGrams = (ri.bakerspercent / 100) * scaleFactor;
-            const totalWeightInGrams = weightInGrams * er.qty;
+            if (ri.ingredient.qty !== -1000) { // unlimited ingredients
+              const weightInGrams = (ri.bakerspercent / 100) * scaleFactor;
+              const totalWeightInGrams = weightInGrams * er.qty;
 
-            const ingredient = ri.ingredient;
-            let totalWeight = totalWeightInGrams;
+              const ingredient = ri.ingredient;
+              let totalWeight = totalWeightInGrams;
 
-            // Convert to inventory unit
-            if (ingredient.unit === 'קג') {
-              totalWeight = totalWeightInGrams / 1000; // convert grams to kg
+              // Convert to inventory unit
+              if (ingredient.unit === 'קג') {
+                totalWeight = totalWeightInGrams / 1000; // convert grams to kg
+              }
+
+              const ingredientId = ingredient.id;
+              inventoryUpdatesMap[ingredientId] = (inventoryUpdatesMap[ingredientId] || 0) + totalWeight;
             }
-
-            const ingredientId = ingredient.id;
-            inventoryUpdatesMap[ingredientId] = (inventoryUpdatesMap[ingredientId] || 0) + totalWeight;
           });
 
         });
@@ -180,16 +181,6 @@ function AppContent() {
       )}
     </div>
   );
-}
-
-function App() {
-  return (
-    <ConfirmProvider>
-      <AlertProvider>
-        <AppContent />
-      </AlertProvider>
-    </ConfirmProvider>
-  )
 }
 
 export default App;
