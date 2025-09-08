@@ -13,6 +13,7 @@ import { useSupabaseSession } from './hooks/useSupabaseSession';
 import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
 import { supabase } from './supabaseClient';
+import { AlertProvider } from './contexts/AlertContext';
 
 function AppContent() {
   const { session, setSession } = useSupabaseSession();
@@ -121,7 +122,7 @@ function AppContent() {
 
       setUpdating(false);
     };
-    
+
     if (!!session) processEvents();
   }, []);
 
@@ -184,7 +185,9 @@ function AppContent() {
 function App() {
   return (
     <ConfirmProvider>
-      <AppContent />
+      <AlertProvider>
+        <AppContent />
+      </AlertProvider>
     </ConfirmProvider>
   )
 }

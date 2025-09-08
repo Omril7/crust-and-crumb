@@ -3,6 +3,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useScreenSize } from '../hooks/useScreenSize'; // or useBreakpoints
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
+import { useConfirm } from '../contexts/ConfirmContext';
 
 const NAV_ITEMS = [
   { id: '', label: 'בית' },
@@ -15,6 +16,7 @@ const NAV_ITEMS = [
 
 const Navbar = ({ onLogout }) => {
   const { theme } = useTheme();
+  const { confirm } = useConfirm();
   const navigate = useNavigate();
   const location = useLocation();
   const currentPath = location.pathname.replace("/", "");
@@ -119,6 +121,18 @@ const Navbar = ({ onLogout }) => {
   };
 
   const handleLogout = async () => {
+    const ok = await confirm(
+      "אתה בטוח שאתה רוצה להתנתק?"
+    );
+
+    if (!ok) return;
+
+    const ok2 = await confirm(
+      "בטוח י'מניאק?"
+    );
+
+    if (!ok2) return;
+
     let { error } = await supabase.auth.signOut();
     onLogout();
   }

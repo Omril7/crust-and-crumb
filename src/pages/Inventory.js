@@ -10,6 +10,7 @@ import { useConfirm } from '../contexts/ConfirmContext';
 import { supabase } from '../supabaseClient';
 import LinearLoader from '../components/LinearLoader';
 import InventoryAlert from '../components/InventoryAlert';
+import { useAlert } from '../contexts/AlertContext';
 
 const INIT_NEW_INGREDIENT = {
   ingredient: "",
@@ -26,6 +27,7 @@ export default function Inventory({ user }) {
   const { theme } = useTheme();
   const { isMobile, isTablet } = useScreenSize();
   const { confirm } = useConfirm();
+  const { alert } = useAlert();
 
   const [inventory, setInventory] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -53,7 +55,10 @@ export default function Inventory({ user }) {
   }, []);
 
   const addIngredient = async () => {
-    if (!(newIngredient.ingredient && newIngredient.qty && newIngredient.unit && newIngredient.lowthreshold)) return;
+    if (!(newIngredient.ingredient && newIngredient.qty && newIngredient.unit && newIngredient.lowthreshold)) {
+      await alert("לא חסר לך משהו אהבל? אולי מרכיב? אולי כמות? אולי המינימום שלך?");
+      return;
+    };
 
     const { data, error } = await supabase
       .from("inventory")
@@ -78,7 +83,10 @@ export default function Inventory({ user }) {
   };
 
   const updateIngredient = async () => {
-    if (!(updatedIngredient.id && updatedIngredient.qty)) return;
+    if (!(updatedIngredient.id && updatedIngredient.qty)) {
+      await alert("לא חסר לך משהו אהבל? אולי מרכיב? אולי כמות?");
+      return;
+    };
 
     const ingredientRow = inventory.find(i => i.id === updatedIngredient.id);
     if (!ingredientRow) {
