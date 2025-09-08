@@ -213,22 +213,11 @@ export default function Inventory({ user }) {
       justifyContent: isMobile ? 'stretch' : 'flex-start',
       marginTop: isMobile ? 10 : 0
     },
-    mobileFormGrid: {
+    formGrid: (cols) => ({
       display: 'grid',
-      gridTemplateColumns: '1fr',
+      gridTemplateColumns: `repeat(${cols}, 1fr)`,
       gap: 15
-    },
-    tabletFormGrid: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr',
-      gap: 20
-    },
-    desktopFormGrid: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(4, 1fr)',
-      gap: 20,
-      alignItems: 'end'
-    },
+    }),
     editInput: {
       width: isMobile ? '60px' : '50px',
       padding: isMobile ? '6px' : '4px',
@@ -237,225 +226,6 @@ export default function Inventory({ user }) {
       borderRadius: '4px',
       textAlign: 'center'
     }
-  };
-
-  // Responsive form layout
-  const renderFormInputs = () => {
-    if (isMobile) {
-      return (
-        <>
-          <Input
-            label="מרכיב"
-            value={newIngredient.ingredient}
-            onChange={e => setNewIngredient({ ...newIngredient, ingredient: e.target.value })}
-            icon={<IceCreamBowl size={18} />}
-            style={{ width: '100%', fontSize: '16px' }}
-          />
-          <Input
-            label="כמות"
-            type="number"
-            value={newIngredient.qty}
-            onChange={e => setNewIngredient({ ...newIngredient, qty: e.target.value })}
-            icon={<Hash size={18} />}
-            min={1}
-            style={{ width: '100%', fontSize: '16px' }}
-          />
-          <Select
-            label="מידה"
-            value={newIngredient.unit}
-            onChange={e => setNewIngredient({ ...newIngredient, unit: e.target.value })}
-            icon={<Ruler size={18} />}
-            options={['קג', 'גרם']}
-            style={{ width: '100%', fontSize: '16px' }}
-          />
-          <Input
-            label="מינימום"
-            type="number"
-            value={newIngredient.lowthreshold}
-            onChange={e => setNewIngredient({ ...newIngredient, lowthreshold: e.target.value })}
-            icon={<ShieldMinus size={18} />}
-            min={1}
-            style={{ width: '100%', fontSize: '16px' }}
-          />
-          <Button
-            title="הוסף מרכיב"
-            onClick={addIngredient}
-          />
-        </>
-      );
-    }
-
-    if (isTablet) {
-      return (
-        <>
-          <Input
-            label="מרכיב"
-            value={newIngredient.ingredient}
-            onChange={e => setNewIngredient({ ...newIngredient, ingredient: e.target.value })}
-            icon={<IceCreamBowl size={18} />}
-            style={{ width: '100%' }}
-          />
-          <Input
-            label="כמות"
-            type="number"
-            value={newIngredient.qty}
-            onChange={e => setNewIngredient({ ...newIngredient, qty: e.target.value })}
-            icon={<Hash size={18} />}
-            min={1}
-            style={{ width: '100%' }}
-          />
-          <Select
-            label="מידה"
-            value={newIngredient.unit}
-            onChange={e => setNewIngredient({ ...newIngredient, unit: e.target.value })}
-            icon={<Ruler size={18} />}
-            options={['קג', 'גרם']}
-            style={{ width: '100%' }}
-          />
-          <Input
-            label="מינימום"
-            type="number"
-            value={newIngredient.lowthreshold}
-            onChange={e => setNewIngredient({ ...newIngredient, lowthreshold: e.target.value })}
-            icon={<ShieldMinus size={18} />}
-            min={1}
-            style={{ width: '100%' }}
-          />
-          <Button
-            title="הוסף מרכיב"
-            onClick={addIngredient}
-          />
-        </>
-      );
-    }
-
-    // Desktop layout
-    return (
-      <>
-        <Input
-          label="מרכיב"
-          value={newIngredient.ingredient}
-          onChange={e => setNewIngredient({ ...newIngredient, ingredient: e.target.value })}
-          icon={<IceCreamBowl size={18} />}
-          style={{ width: '100%' }}
-        />
-        <Input
-          label="כמות"
-          type="number"
-          value={newIngredient.qty}
-          onChange={e => setNewIngredient({ ...newIngredient, qty: e.target.value })}
-          icon={<Hash size={18} />}
-          min={1}
-          style={{ width: '100%' }}
-        />
-        <Select
-          label="מידה"
-          value={newIngredient.unit}
-          onChange={e => setNewIngredient({ ...newIngredient, unit: e.target.value })}
-          icon={<Ruler size={18} />}
-          options={['קג', 'גרם']}
-          style={{ width: '100%' }}
-        />
-        <Input
-          label="מינימום"
-          type="number"
-          value={newIngredient.lowthreshold}
-          onChange={e => setNewIngredient({ ...newIngredient, lowthreshold: e.target.value })}
-          icon={<ShieldMinus size={18} />}
-          min={1}
-          style={{ width: '100%' }}
-        />
-        <Button
-          title="הוסף מרכיב"
-          onClick={addIngredient}
-        />
-      </>
-    );
-  };
-
-  const renderFormInputsUpdate = () => {
-    if (isMobile) {
-      return (
-        <>
-          <SelectWithSearchBar
-            label="מרכיב"
-            value={updatedIngredient.id}
-            onChange={e => setUpdatedIngredient({ ...updatedIngredient, id: e.target.value })}
-            icon={<IceCreamBowl size={18} />}
-            options={inventory.map(inv => ({ name: inv.ingredient, value: inv.id }))}
-            style={{ width: '100%', fontSize: '16px' }}
-          />
-          <Input
-            label="כמות שהתווספה"
-            type="number"
-            value={updatedIngredient.qty}
-            onChange={e => setUpdatedIngredient({ ...updatedIngredient, qty: e.target.value })}
-            icon={<Hash size={18} />}
-            min={1}
-            style={{ width: '100%', fontSize: '16px' }}
-          />
-          <Button
-            title="עדכן מרכיב"
-            onClick={updateIngredient}
-          />
-        </>
-      );
-    }
-
-    if (isTablet) {
-      return (
-        <>
-          <SelectWithSearchBar
-            label="מרכיב"
-            value={updatedIngredient.id}
-            onChange={e => setUpdatedIngredient({ ...updatedIngredient, id: e.target.value })}
-            icon={<IceCreamBowl size={18} />}
-            options={inventory.map(inv => ({ name: inv.ingredient, value: inv.id }))}
-            style={{ width: '100%', fontSize: '16px' }}
-          />
-          <Input
-            label="כמות שהתווספה"
-            type="number"
-            value={updatedIngredient.qty}
-            onChange={e => setUpdatedIngredient({ ...updatedIngredient, qty: e.target.value })}
-            icon={<Hash size={18} />}
-            min={1}
-            style={{ width: '100%' }}
-          />
-          <Button
-            title="עדכן מרכיב"
-            onClick={updateIngredient}
-          />
-        </>
-      );
-    }
-
-    // Desktop layout
-    return (
-      <>
-        <SelectWithSearchBar
-          label="מרכיב"
-          value={updatedIngredient.id}
-          onChange={e => setUpdatedIngredient({ ...updatedIngredient, id: e.target.value })}
-          icon={<IceCreamBowl size={18} />}
-          options={inventory.map(inv => ({ name: inv.ingredient, value: inv.id }))}
-          style={{ width: '100%', fontSize: '16px' }}
-        />
-        <Input
-          label="כמות שהתווספה"
-          type="number"
-          value={updatedIngredient.qty}
-          onChange={e => setUpdatedIngredient({ ...updatedIngredient, qty: e.target.value })}
-          icon={<Hash size={18} />}
-          min={1}
-          style={{ width: '100%' }}
-        />
-        <Button
-          title="עדכן מרכיב"
-          onClick={updateIngredient}
-        />
-      </>
-    );
   };
 
   // Responsive table headers - hide less important columns on mobile
@@ -548,30 +318,83 @@ export default function Inventory({ user }) {
       />
 
       <section style={styles.section} aria-label="הוספת מלאי">
-        <h3 style={styles.sectionHeader}>
-          <Plus size={isMobile ? 18 : 20} />
-          הוספת מלאי חדש
-        </h3>
         <InventoryAlert />
+        <div style={styles.formGrid(isMobile ? '1' : '2')}>
+          <div style={{ width: '90%' }}>
+            <h3 style={styles.sectionHeader}>
+              <Plus size={isMobile ? 18 : 20} />
+              הוספת מלאי חדש
+            </h3>
+            <div style={styles.formGrid(isMobile || isTablet ? '1' : '2')}>
+              <Input
+                label="מרכיב"
+                value={newIngredient.ingredient}
+                onChange={e => setNewIngredient({ ...newIngredient, ingredient: e.target.value })}
+                icon={<IceCreamBowl size={18} />}
+                style={{ width: '100%', fontSize: '16px' }}
+              />
+              <Input
+                label="כמות"
+                type="number"
+                value={newIngredient.qty}
+                onChange={e => setNewIngredient({ ...newIngredient, qty: e.target.value })}
+                icon={<Hash size={18} />}
+                min={1}
+                style={{ width: '100%', fontSize: '16px' }}
+              />
+              <Select
+                label="מידה"
+                value={newIngredient.unit}
+                onChange={e => setNewIngredient({ ...newIngredient, unit: e.target.value })}
+                icon={<Ruler size={18} />}
+                options={['קג', 'גרם']}
+                style={{ width: '100%', fontSize: '16px' }}
+              />
+              <Input
+                label="מינימום"
+                type="number"
+                value={newIngredient.lowthreshold}
+                onChange={e => setNewIngredient({ ...newIngredient, lowthreshold: e.target.value })}
+                icon={<ShieldMinus size={18} />}
+                min={1}
+                style={{ width: '100%', fontSize: '16px' }}
+              />
+              <Button
+                title="הוסף מרכיב"
+                onClick={addIngredient}
+              />
+            </div>
+          </div>
 
-        <div style={
-          isMobile ? styles.mobileFormGrid :
-            isTablet ? styles.tabletFormGrid :
-              styles.desktopFormGrid
-        }>
-          {renderFormInputs()}
-        </div>
-        <h3 style={styles.sectionHeader}>
-          <Edit2 size={isMobile ? 18 : 20} />
-          עידכון מלאי
-        </h3>
-
-        <div style={
-          isMobile ? styles.mobileFormGrid :
-            isTablet ? styles.tabletFormGrid :
-              styles.desktopFormGrid
-        }>
-          {renderFormInputsUpdate()}
+          <div style={{ width: '90%' }}>
+            <h3 style={styles.sectionHeader}>
+              <Edit2 size={isMobile ? 18 : 20} />
+              עידכון מלאי
+            </h3>
+            <div style={styles.formGrid(isMobile || isTablet ? '1' : '2')}>
+              <SelectWithSearchBar
+                label="מרכיב"
+                value={updatedIngredient.id}
+                onChange={e => setUpdatedIngredient({ ...updatedIngredient, id: e.target.value })}
+                icon={<IceCreamBowl size={18} />}
+                options={inventory.map(inv => ({ name: inv.ingredient, value: inv.id }))}
+                style={{ width: '100%', fontSize: '16px' }}
+              />
+              <Input
+                label="כמות שהתווספה"
+                type="number"
+                value={updatedIngredient.qty}
+                onChange={e => setUpdatedIngredient({ ...updatedIngredient, qty: e.target.value })}
+                icon={<Hash size={18} />}
+                min={1}
+                style={{ width: '100%' }}
+              />
+              <Button
+                title="עדכן מרכיב"
+                onClick={updateIngredient}
+              />
+            </div>
+          </div>
         </div>
       </section>
 

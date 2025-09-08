@@ -40,6 +40,7 @@ export const Input = ({
     },
     input: {
       flex: 1,
+      width: '100%',
       border: 'none',
       outline: 'none',
       fontSize: '1rem',
@@ -226,6 +227,7 @@ export const Select = ({
       fontFamily: theme.fontFamily || 'Arial, sans-serif',
       direction: 'rtl',
       cursor: 'pointer',
+      width: '100%'
     },
     iconWrapper: {
       position: 'relative',

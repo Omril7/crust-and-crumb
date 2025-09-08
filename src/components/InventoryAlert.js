@@ -31,7 +31,7 @@ function InventoryAlert() {
         opacity: fadeIn ? 1 : 0,
         transform: fadeIn ? 'translateY(0)' : 'translateY(-10px)',
         transition: 'opacity 0.3s ease, transform 0.3s ease',
-        width: 'fit-content'
+        // width: 'fit-content'
       }}
     >
       <AlertCircle size={isMobile ? 18 : 20} color={theme.accent.primary} />
