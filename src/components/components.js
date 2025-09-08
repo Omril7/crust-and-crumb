@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useScreenSize } from '../hooks/useScreenSize';
@@ -299,6 +299,166 @@ export const Select = ({
           <div style={styles.iconWrapper}>{icon}</div>
         )}
       </label>
+    </div>
+  );
+};
+
+export const SelectWithSearchBar = ({
+  label,
+  value,
+  onChange,
+  options = [],
+  style = {},
+  icon = null,
+}) => {
+  const { theme } = useTheme();
+  const [isOpen, setIsOpen] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const dropdownRef = useRef(null);
+
+  const filteredOptions = options.filter((opt) => opt.name.toLowerCase().includes(searchTerm.toLowerCase()));
+
+  // Close on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setIsOpen(false);
+        setIsFocused(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const styles = {
+    container: {
+      position: "relative",
+      display: "inline-block",
+      width: "220px",
+      ...style,
+    },
+    selectBox: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      backgroundColor: theme.inputBackground || "#fff",
+      border: `1.5px solid ${theme.borderColor || "#ccc"}`,
+      borderRadius: 8,
+      padding: "8px 12px",
+      fontSize: "1rem",
+      color: theme.textPrimary || "#333",
+      cursor: "pointer",
+    },
+    dropdown: {
+      position: "absolute",
+      top: "100%",
+      left: 0,
+      right: 0,
+      background: theme.inputBackground || "#fff",
+      border: `1px solid ${theme.borderColor || "#ccc"}`,
+      borderRadius: 8,
+      marginTop: 4,
+      maxHeight: 200,
+      overflowY: "auto",
+      zIndex: 10,
+    },
+    option: {
+      padding: "8px 12px",
+      cursor: "pointer",
+    },
+    searchInput: {
+      width: "90%",
+      padding: "6px 10px",
+      border: "none",
+      borderBottom: `1px solid ${theme.borderColor || "#ccc"}`,
+      outline: "none",
+      fontSize: "1rem",
+    },
+    floatingLabel: {
+      position: 'absolute',
+      backgroundColor: theme.inputBackground || '#fff',
+      padding: '0 4px',
+      fontWeight: 500,
+      color: theme.textPrimary || '#333',
+      pointerEvents: 'none',
+      right: 12,
+      transition: 'all 0.2s ease',
+      userSelect: 'none',
+    },
+    floatingLabelFloating: {
+      background: 'linear-gradient(to bottom, #f9f9f9 50%, #fff 50%)',
+      top: '-0.6em',
+      fontSize: '0.85rem',
+      color: theme.textPrimary || '#333',
+    },
+    floatingLabelInside: {
+      top: '50%',
+      transform: 'translateY(-50%)',
+      fontSize: '1rem',
+      color: '#888',
+      marginRight: 26,
+    },
+  };
+
+  const selectedOption = options.find((opt) => opt.value === value);
+
+  return (
+    <div style={styles.container} ref={dropdownRef}>
+      <span style={{
+        ...styles.floatingLabel,
+        ...(value || isFocused
+          ? styles.floatingLabelFloating
+          : styles.floatingLabelInside),
+      }}>{label}</span>
+
+      <div
+        style={styles.selectBox}
+        onClick={() => {
+          setIsOpen(!isOpen);
+          setIsFocused(true);
+        }}
+      >
+        {selectedOption ? selectedOption.name : ""}
+        {icon && <span>{icon}</span>}
+      </div>
+
+      {isOpen && (
+        <div style={styles.dropdown}>
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="חפש..."
+            style={styles.searchInput}
+            autoFocus
+          />
+
+          {filteredOptions.length > 0 ? (
+            filteredOptions.map((opt) => (
+              <div
+                key={opt.value}
+                style={styles.option}
+                onClick={() => {
+                  onChange({ target: { value: opt.value } });
+                  setIsOpen(false);
+                  setSearchTerm("");
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.background = "#eee")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.background = "transparent")
+                }
+              >
+                {opt.name}
+              </div>
+            ))
+          ) : (
+            <div style={styles.option}>אין תוצאות</div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

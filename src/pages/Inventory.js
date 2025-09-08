@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Package, Trash2, Plus, Hash, Ruler, IceCreamBowl, TriangleAlert, ShieldMinus, Infinity, AlertCircle } from 'lucide-react';
+import { Package, Trash2, Plus, Hash, Ruler, IceCreamBowl, TriangleAlert, ShieldMinus, Infinity, AlertCircle, Edit, Edit2 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useScreenSize } from '../hooks/useScreenSize';
 import Container from '../components/Container';
 import Header from '../components/Header';
-import { Button, Input, Select, Table } from '../components/components';
+import { Button, Input, Select, SelectWithSearchBar, Table } from '../components/components';
 import { formatNumber, parseDate } from '../utils/helper';
 import { useConfirm } from '../contexts/ConfirmContext';
 import { supabase } from '../supabaseClient';
@@ -17,6 +17,10 @@ const INIT_NEW_INGREDIENT = {
   unit: "קג",
   lowthreshold: ""
 };
+const INIT_UPDATED_INGREDIENT = {
+  qty: 1,
+  id: null
+};
 
 export default function Inventory({ user }) {
   const { theme } = useTheme();
@@ -27,6 +31,7 @@ export default function Inventory({ user }) {
   const [loading, setLoading] = useState(false);
 
   const [newIngredient, setNewIngredient] = useState(INIT_NEW_INGREDIENT);
+  const [updatedIngredient, setUpdatedIngredient] = useState(INIT_UPDATED_INGREDIENT);
 
   const [editingQty, setEditingQty] = useState(null);
 
@@ -70,6 +75,35 @@ export default function Inventory({ user }) {
 
     setInventory([...inventory, ...data]);
     setNewIngredient(INIT_NEW_INGREDIENT);
+  };
+
+  const updateIngredient = async () => {
+    if (!(updatedIngredient.id && updatedIngredient.qty)) return;
+
+    const ingredientRow = inventory.find(i => i.id === updatedIngredient.id);
+    if (!ingredientRow) {
+      console.error("Ingredient not found in state");
+      return;
+    }
+
+    const newQty = parseFloat(ingredientRow.qty) + parseFloat(updatedIngredient.qty);
+
+    const { data, error } = await supabase
+      .from("inventory")
+      .update({ qty: newQty })
+      .eq("id", updatedIngredient.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error updating ingredient:", error.message);
+      return;
+    }
+
+    // Update local state
+    setInventory(inventory.map(i => i.id === updatedIngredient.id ? data : i));
+
+    setUpdatedIngredient(INIT_UPDATED_INGREDIENT);
   };
 
   const removeIngredient = async (id) => {
@@ -243,13 +277,10 @@ export default function Inventory({ user }) {
             min={1}
             style={{ width: '100%', fontSize: '16px' }}
           />
-          <div style={styles.buttonContainer}>
-            <Button
-              title="הוסף מרכיב"
-              onClick={addIngredient}
-              style={{ width: '100%', padding: '12px', fontSize: '16px' }}
-            />
-          </div>
+          <Button
+            title="הוסף מרכיב"
+            onClick={addIngredient}
+          />
         </>
       );
     }
@@ -290,12 +321,10 @@ export default function Inventory({ user }) {
             min={1}
             style={{ width: '100%' }}
           />
-          <div style={styles.buttonContainer}>
-            <Button
-              title="הוסף מרכיב"
-              onClick={addIngredient}
-            />
-          </div>
+          <Button
+            title="הוסף מרכיב"
+            onClick={addIngredient}
+          />
         </>
       );
     }
@@ -339,6 +368,91 @@ export default function Inventory({ user }) {
         <Button
           title="הוסף מרכיב"
           onClick={addIngredient}
+        />
+      </>
+    );
+  };
+
+  const renderFormInputsUpdate = () => {
+    if (isMobile) {
+      return (
+        <>
+          <SelectWithSearchBar
+            label="מרכיב"
+            value={updatedIngredient.id}
+            onChange={e => setUpdatedIngredient({ ...updatedIngredient, id: e.target.value })}
+            icon={<IceCreamBowl size={18} />}
+            options={inventory.map(inv => ({ name: inv.ingredient, value: inv.id }))}
+            style={{ width: '100%', fontSize: '16px' }}
+          />
+          <Input
+            label="כמות שהתווספה"
+            type="number"
+            value={updatedIngredient.qty}
+            onChange={e => setUpdatedIngredient({ ...updatedIngredient, qty: e.target.value })}
+            icon={<Hash size={18} />}
+            min={1}
+            style={{ width: '100%', fontSize: '16px' }}
+          />
+          <Button
+            title="עדכן מרכיב"
+            onClick={updateIngredient}
+          />
+        </>
+      );
+    }
+
+    if (isTablet) {
+      return (
+        <>
+          <SelectWithSearchBar
+            label="מרכיב"
+            value={updatedIngredient.id}
+            onChange={e => setUpdatedIngredient({ ...updatedIngredient, id: e.target.value })}
+            icon={<IceCreamBowl size={18} />}
+            options={inventory.map(inv => ({ name: inv.ingredient, value: inv.id }))}
+            style={{ width: '100%', fontSize: '16px' }}
+          />
+          <Input
+            label="כמות שהתווספה"
+            type="number"
+            value={updatedIngredient.qty}
+            onChange={e => setUpdatedIngredient({ ...updatedIngredient, qty: e.target.value })}
+            icon={<Hash size={18} />}
+            min={1}
+            style={{ width: '100%' }}
+          />
+          <Button
+            title="עדכן מרכיב"
+            onClick={updateIngredient}
+          />
+        </>
+      );
+    }
+
+    // Desktop layout
+    return (
+      <>
+        <SelectWithSearchBar
+          label="מרכיב"
+          value={updatedIngredient.id}
+          onChange={e => setUpdatedIngredient({ ...updatedIngredient, id: e.target.value })}
+          icon={<IceCreamBowl size={18} />}
+          options={inventory.map(inv => ({ name: inv.ingredient, value: inv.id }))}
+          style={{ width: '100%', fontSize: '16px' }}
+        />
+        <Input
+          label="כמות שהתווספה"
+          type="number"
+          value={updatedIngredient.qty}
+          onChange={e => setUpdatedIngredient({ ...updatedIngredient, qty: e.target.value })}
+          icon={<Hash size={18} />}
+          min={1}
+          style={{ width: '100%' }}
+        />
+        <Button
+          title="עדכן מרכיב"
+          onClick={updateIngredient}
         />
       </>
     );
@@ -436,7 +550,7 @@ export default function Inventory({ user }) {
       <section style={styles.section} aria-label="הוספת מלאי">
         <h3 style={styles.sectionHeader}>
           <Plus size={isMobile ? 18 : 20} />
-          הוספת מלאי
+          הוספת מלאי חדש
         </h3>
         <InventoryAlert />
 
@@ -446,6 +560,18 @@ export default function Inventory({ user }) {
               styles.desktopFormGrid
         }>
           {renderFormInputs()}
+        </div>
+        <h3 style={styles.sectionHeader}>
+          <Edit2 size={isMobile ? 18 : 20} />
+          עידכון מלאי
+        </h3>
+
+        <div style={
+          isMobile ? styles.mobileFormGrid :
+            isTablet ? styles.tabletFormGrid :
+              styles.desktopFormGrid
+        }>
+          {renderFormInputsUpdate()}
         </div>
       </section>
 
