@@ -576,7 +576,7 @@ export const Table = ({ title, headers, data, sortable = false }) => {
       padding: isMobile ? '10px 6px' : isTablet ? '12px 8px' : '14px 12px',
       backgroundColor: theme.tableHeaderBackground || '#f0f0f0',
       fontWeight: '700',
-      textAlign: 'center',
+      textAlign: 'right',
       color: theme.colors?.textLight || '#4caf50',
       whiteSpace: isMobile ? 'normal' : 'nowrap',
       fontSize: isMobile ? '0.8rem' : isTablet ? '0.9rem' : '1rem',
@@ -594,8 +594,8 @@ export const Table = ({ title, headers, data, sortable = false }) => {
     },
     thContent: {
       display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
+      alignItems: isMobile ? 'flex-start' : 'center',
+      justifyContent: isMobile ? 'center' : 'flex-start',
       gap: isMobile ? '2px' : '4px',
       flexDirection: isMobile ? 'column' : 'row',
       // Stack icon below text on mobile if space is tight
@@ -606,7 +606,7 @@ export const Table = ({ title, headers, data, sortable = false }) => {
     td: {
       borderBottom: `1px solid ${theme.borderColor || '#ddd'}`,
       padding: isMobile ? '8px 4px' : isTablet ? '10px 6px' : '12px 10px',
-      textAlign: 'center',
+      textAlign: 'right',
       verticalAlign: 'middle',
       whiteSpace: isMobile ? 'normal' : 'nowrap',
       fontSize: isMobile ? '0.8rem' : isTablet ? '0.9rem' : '1rem',

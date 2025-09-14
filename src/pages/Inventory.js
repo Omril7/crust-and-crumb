@@ -16,7 +16,8 @@ const INIT_NEW_INGREDIENT = {
   ingredient: "",
   qty: 1,
   unit: "קג",
-  lowthreshold: ""
+  lowthreshold: "",
+  price_per_unit: 0
 };
 const INIT_UPDATED_INGREDIENT = {
   qty: 1,
@@ -36,6 +37,8 @@ export default function Inventory({ user }) {
   const [updatedIngredient, setUpdatedIngredient] = useState(INIT_UPDATED_INGREDIENT);
 
   const [editingQty, setEditingQty] = useState(null);
+  const [editingLowthreshold, setEditingLowthreshold] = useState(null);
+  const [editingPrice, setEditingPrice] = useState(null);
 
   // Load inventory
   useEffect(() => {
@@ -55,7 +58,7 @@ export default function Inventory({ user }) {
   }, []);
 
   const addIngredient = async () => {
-    if (!(newIngredient.ingredient && newIngredient.qty && newIngredient.unit && newIngredient.lowthreshold)) {
+    if (!(newIngredient.ingredient && newIngredient.qty && newIngredient.unit && newIngredient.lowthreshold && newIngredient.price_per_unit)) {
       await alert("לא חסר לך משהו אהבל? אולי מרכיב? אולי כמות? אולי המינימום שלך?");
       return;
     };
@@ -68,7 +71,8 @@ export default function Inventory({ user }) {
           ingredient: newIngredient.ingredient,
           qty: parseFloat(newIngredient.qty),
           unit: newIngredient.unit,
-          lowthreshold: parseFloat(newIngredient.lowthreshold)
+          lowthreshold: parseFloat(newIngredient.lowthreshold),
+          price_per_unit: parseFloat(newIngredient.price_per_unit)
         }
       ])
       .select();
@@ -143,7 +147,7 @@ export default function Inventory({ user }) {
       .from("inventory")
       .update({ qty: parseFloat(value) })
       .eq("id", id)
-      .select("id, ingredient, qty, unit, lowthreshold, lastupdate")
+      .select("id, ingredient, qty, unit, lowthreshold, lastupdate, price_per_unit")
       .single(); // ensures only one row
 
 
@@ -157,6 +161,62 @@ export default function Inventory({ user }) {
     }
 
     setEditingQty(null);
+  };
+
+  const startEditLowthreshold = (id, value) => {
+    setEditingLowthreshold({ id, value: value.toString() });
+  };
+
+  const saveEditLowthreshold = async () => {
+    if (!editingLowthreshold) return;
+    const { id, value } = editingLowthreshold;
+
+    const { data, error } = await supabase
+      .from("inventory")
+      .update({ lowthreshold: parseFloat(value) })
+      .eq("id", id)
+      .select("id, ingredient, qty, unit, lowthreshold, lastupdate, price_per_unit")
+      .single(); // ensures only one row
+
+
+    if (error) {
+      console.error("Error updating lowthreshold:", error.message);
+      return;
+    }
+
+    if (!error && data) {
+      setInventory(inventory.map(i => i.id === id ? data : i));
+    }
+
+    setEditingLowthreshold(null);
+  };
+
+  const startEditPrice = (id, value) => {
+    setEditingPrice({ id, value: value.toString() });
+  };
+
+  const saveEditPrice = async () => {
+    if (!editingPrice) return;
+    const { id, value } = editingPrice;
+
+    const { data, error } = await supabase
+      .from("inventory")
+      .update({ price_per_unit: parseFloat(value) })
+      .eq("id", id)
+      .select("id, ingredient, qty, unit, lowthreshold, lastupdate, price_per_unit")
+      .single(); // ensures only one row
+
+
+    if (error) {
+      console.error("Error updating price_per_unit:", error.message);
+      return;
+    }
+
+    if (!error && data) {
+      setInventory(inventory.map(i => i.id === id ? data : i));
+    }
+
+    setEditingPrice(null);
   };
 
   const sortedInventory = [...inventory].sort((a, b) => {
@@ -271,7 +331,7 @@ export default function Inventory({ user }) {
                     autoFocus
                     style={styles.editInput}
                   />
-                ) : formatNumber(value)
+                ) : `${formatNumber(value)} ${row.unit}`
                 }
               </div>
             )}
@@ -279,17 +339,67 @@ export default function Inventory({ user }) {
 
         )
       },
-      { key: "unit", label: "מידה" }
+      {
+        key: "lowthreshold",
+        label: "מינימום",
+        render: (value, row) => (
+          <>
+            {value === -1000 ? (
+              <Infinity />
+            ) : (
+              <div
+                style={{ cursor: "pointer" }}
+                onClick={() => startEditLowthreshold(row.id, row.lowthreshold)}
+              >
+                {editingLowthreshold?.id === row.id ? (
+                  <input
+                    type="number"
+                    value={editingLowthreshold.value}
+                    onChange={(e) =>
+                      setEditingLowthreshold({ id: row.id, value: e.target.value })
+                    }
+                    onBlur={saveEditLowthreshold}
+                    autoFocus
+                    style={styles.editInput}
+                  />
+                ) : `${formatNumber(value)} ${row.unit}`
+                }
+              </div>
+            )}
+          </>
+
+        )
+      },
     ];
 
     if (!isMobile) {
       baseHeaders.push(
-        { key: "lowthreshold", label: "מינימום", render: (value, _) => value === -1000 ? <Infinity /> : value },
         {
-          key: "lastupdate",
-          label: "עידכון אחרון",
-          render: (value, row) => parseDate(value)
-        }
+          key: "price_per_unit",
+          label: "מחיר ליחידה",
+          render: (value, row) => (
+            <div
+              style={{ cursor: "pointer" }}
+              onClick={() => startEditPrice(row.id, row.price_per_unit)}
+            >
+              {editingPrice?.id === row.id ? (
+                <input
+                  type="number"
+                  value={editingPrice.value}
+                  onChange={(e) =>
+                    setEditingPrice({ id: row.id, value: e.target.value })
+                  }
+                  onBlur={saveEditPrice}
+                  autoFocus
+                  style={styles.editInput}
+                />
+              ) : `₪${formatNumber(value)}`
+              }
+            </div>
+
+          )
+        },
+        { key: "lastupdate", label: "עידכון אחרון", render: (value, row) => parseDate(value) }
       );
     }
 
@@ -364,6 +474,15 @@ export default function Inventory({ user }) {
                 value={newIngredient.lowthreshold}
                 onChange={e => setNewIngredient({ ...newIngredient, lowthreshold: e.target.value })}
                 icon={<ShieldMinus size={18} />}
+                min={1}
+                style={{ width: '100%', fontSize: '16px' }}
+              />
+              <Input
+                label={`מחיר ל- ${newIngredient.unit === "קג" ? "1 קג" : "100 גרם"}`}
+                type="number"
+                value={newIngredient.price_per_unit}
+                onChange={e => setNewIngredient({ ...newIngredient, price_per_unit: e.target.value })}
+                icon={<span style={{ fontWeight: 'bold', fontSize: isMobile ? '1.1rem' : '1.3rem' }}>₪</span>}
                 min={1}
                 style={{ width: '100%', fontSize: '16px' }}
               />
