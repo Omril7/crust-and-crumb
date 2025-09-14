@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight, X, Calendar, Croissant, Hash, PlusSquare, TreePalm } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Calendar, Croissant, Hash, PlusSquare, TreePalm, NotebookPen } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useScreenSize } from '../hooks/useScreenSize';
 import { useIndexedDB } from '../hooks/useIndexedDB';
@@ -23,6 +23,7 @@ export default function BakePlanningManager({ user }) {
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
+  const [notes, setNotes] = useState(null);
 
   const formatDate = (date) => {
     const year = date.getFullYear();
@@ -42,6 +43,10 @@ export default function BakePlanningManager({ user }) {
   };
 
   const days = getDaysInMonth(year, month);
+
+  useEffect(() => {
+    console.log(events[selectedDate])
+  }, [selectedDate])
 
   // ================= Fetch Recipes =================
   useEffect(() => {
@@ -89,15 +94,16 @@ export default function BakePlanningManager({ user }) {
       const { data: eventsData, error } = await supabase
         .from('events')
         .select(`
-        id,
-        event_date,
-        event_recipes (
           id,
-          qty,
-          recipe_id,
-          recipes ( name )
-        )
-      `)
+          event_date,
+          notes,
+          event_recipes (
+            id,
+            qty,
+            recipe_id,
+            recipes ( name )
+          )
+        `)
         .gte('event_date', startDate)
         .lte('event_date', endDate);
 
@@ -116,7 +122,8 @@ export default function BakePlanningManager({ user }) {
           recipe: er.recipes?.name || 'מתכון לא ידוע',
           qty: er.qty,
           eventId: ev.id,
-          isHoliday: false
+          isHoliday: false,
+          notes: ev.notes || null,
         }));
       });
 
@@ -137,7 +144,13 @@ export default function BakePlanningManager({ user }) {
   }, [year, month]);
 
   const openModal = (date) => {
-    setSelectedDate(formatDate(date));
+    const dayStr = formatDate(date);
+    setSelectedDate(dayStr);
+
+    // default notes if this day has an event with notes
+    const existingNotes = events[dayStr]?.[0]?.notes || "";
+    setNotes(existingNotes);
+
     setNewEntry({ recipe: '', qty: 1 });
   };
 
@@ -189,15 +202,16 @@ export default function BakePlanningManager({ user }) {
       const { data } = await supabase
         .from('events')
         .select(`
-      id,
-      event_date,
-      event_recipes (
-        id,
-        qty,
-        recipe_id,
-        recipes ( name )
-      )
-    `)
+          id,
+          event_date,
+          notes,
+          event_recipes (
+            id,
+            qty,
+            recipe_id,
+            recipes ( name )
+          )
+        `)
         .eq('event_date', selectedDate);
 
       if (data) {
@@ -208,7 +222,8 @@ export default function BakePlanningManager({ user }) {
           recipe: er.recipes?.name,
           qty: er.qty,
           eventId: data[0].id,
-          isHoliday: false, // ensure explicit
+          isHoliday: false,
+          notes: data[0].notes || null,
         })) || [];
 
         // keep existing holiday events for this day
@@ -240,6 +255,29 @@ export default function BakePlanningManager({ user }) {
       delete newEvents[selectedDate];
     }
     setEvents(newEvents);
+  };
+
+  const saveNotes = async () => {
+    if (!notes || !selectedDate) return;
+
+    // find the event_id for this day (only 1 event row per date)
+    const eventForDay = events[selectedDate]?.find(ev => !ev.isHoliday);
+    if (!eventForDay?.eventId) return;
+
+    const { error } = await supabase
+      .from('events')
+      .update({ notes })
+      .eq('id', eventForDay.eventId);
+
+    if (error) {
+      console.error("Failed to save notes:", error);
+      return;
+    }
+
+    // update local state
+    const updatedEvents = { ...events };
+    updatedEvents[selectedDate] = updatedEvents[selectedDate].map(ev => ({ ...ev, notes }));
+    setEvents(updatedEvents);
   };
 
   const prevMonth = () => {
@@ -572,6 +610,21 @@ export default function BakePlanningManager({ user }) {
               icon={<PlusSquare size={isMobile ? 20 : 18} color={theme.buttonText || '#fff'} />}
               disabled={!newEntry.recipe || newEntry.qty <= 0}
             />
+
+            <div style={{ marginBottom: 15, marginTop: 15 }}>
+              <Input
+                label="הערות"
+                value={notes}
+                onChange={e => setNotes(e.target.value)}
+                onBlur={saveNotes}
+                icon={<NotebookPen size={isMobile ? 20 : 18} />}
+                rows={2}
+                style={{
+                  width: '100%',
+                  fontSize: isMobile ? '16px' : '14px'
+                }}
+              />
+            </div>
 
             <h4 style={{
               marginTop: 20,

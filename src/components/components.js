@@ -15,7 +15,8 @@ export const Input = ({
   icon = null,
   iconPosition = 'left',
   list = null,
-  dataList = null
+  dataList = null,
+  rows, // <-- new prop
 }) => {
   const { theme } = useTheme();
   const [isFocused, setIsFocused] = useState(false);
@@ -24,16 +25,17 @@ export const Input = ({
     container: {
       position: 'relative',
       display: 'inline-block',
+      width: '100%',
       ...style,
     },
     inputGroup: {
       display: 'flex',
-      alignItems: 'center',
+      alignItems: rows ? 'flex-start' : 'center', // top align if textarea
       gap: 6,
       backgroundColor: theme.inputBackground || '#fff',
       border: `1.5px solid ${theme.borderColor || '#ccc'}`,
       borderRadius: 8,
-      padding: '8px 12px 8px 0px',
+      padding: rows ? '8px 12px' : '8px 12px 8px 0px',
       fontSize: '1rem',
       color: theme.textPrimary || '#333',
       transition: 'border-color 0.3s',
@@ -48,6 +50,8 @@ export const Input = ({
       color: theme.textPrimary || '#333',
       fontFamily: theme.fontFamily || 'Arial, sans-serif',
       direction: 'rtl',
+      resize: 'vertical',
+      minHeight: rows ? `${rows * 1.5}em` : 'auto', // adjust height
     },
     iconWrapper: {
       position: 'relative',
@@ -103,20 +107,37 @@ export const Input = ({
         {icon && iconPosition === 'left' && (
           <div style={styles.iconWrapper}>{icon}</div>
         )}
-        <input
-          list={list}
-          type={type === 'date' ? isFocused ? 'date' : 'text' : type}
-          value={value ?? ''}
-          onChange={onChange}
-          style={styles.input}
-          min={min}
-          placeholder={placeholder}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => {
-            setIsFocused(false);
-            if (onBlur) onBlur(); // <-- only call if provided
-          }}
-        />
+
+        {rows ? (
+          <textarea
+            value={value ?? ''}
+            onChange={onChange}
+            style={styles.input}
+            rows={rows}
+            placeholder={placeholder}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => {
+              setIsFocused(false);
+              if (onBlur) onBlur();
+            }}
+          />
+        ) : (
+          <input
+            list={list}
+            type={type === 'date' ? (isFocused ? 'date' : 'text') : type}
+            value={value ?? ''}
+            onChange={onChange}
+            style={styles.input}
+            min={min}
+            placeholder={placeholder}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => {
+              setIsFocused(false);
+              if (onBlur) onBlur();
+            }}
+          />
+        )}
+
         {list && dataList && (
           <datalist id={list}>
             {dataList.map((item, idx) => (
@@ -124,6 +145,7 @@ export const Input = ({
             ))}
           </datalist>
         )}
+
         {icon && iconPosition === 'right' && (
           <div style={styles.iconWrapper}>{icon}</div>
         )}
