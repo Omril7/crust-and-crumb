@@ -40,7 +40,7 @@ export default function RecipesManager({ user }) {
     setLoading(true);
     const { data, error } = await supabase
       .from('recipes')
-      .select('id, name, sellingprice, doughweight, recipe_ingredients(id, ingredient_id, bakerspercent, inventory(ingredient))')
+      .select('id, name, sellingprice, doughweight, active, recipe_ingredients(id, ingredient_id, bakerspercent, inventory(ingredient))')
       .eq('user_id', user.id);
 
     if (error) console.error(error);
@@ -65,7 +65,7 @@ export default function RecipesManager({ user }) {
     if (!newRecipeName) return;
     const { data, error } = await supabase
       .from('recipes')
-      .insert([{ user_id: user.id, name: newRecipeName, doughweight: 750, sellingprice: 0 }])
+      .insert([{ user_id: user.id, name: newRecipeName, doughweight: 750, sellingprice: 0, active: true }])
       .select()
       .single();
 
@@ -352,7 +352,7 @@ export default function RecipesManager({ user }) {
           <LinearLoader />
         ) : (
           <div style={styles.recipeGrid}>
-            {recipes.map((recipe, idx) => (
+            {recipes.sort((a, b) => a.active === b.active ? 0 : a.active ? -1 : 1).map((recipe, idx) => (
               <RecipeCard
                 key={recipe.name}
                 recipe={recipe}
@@ -380,7 +380,7 @@ export default function RecipesManager({ user }) {
               </button>
             </div>
 
-            <div style={styles.formRow}>
+            <div style={{ ...styles.grid, marginBottom: "20px" }}>
               <Input
                 label="משקל בצק (גרם)"
                 type="number"
@@ -391,7 +391,44 @@ export default function RecipesManager({ user }) {
                 onBlur={() => updateRecipeField("doughweight", selectedRecipe.doughweight)}
                 min={1}
                 icon={<Weight size={isMobile ? 20 : 18} />}
+                style={{ width: "50%" }}
               />
+
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: isMobile ? '10px' : '12px',
+                alignSelf: isMobile ? 'stretch' : 'flex-start',
+              }}>
+                <input
+                  type="checkbox"
+                  id="recipe-active"
+                  checked={selectedRecipe.active || false}
+                  onChange={(e) => {
+                    const newActive = e.target.checked;
+                    setSelectedRecipe({ ...selectedRecipe, active: newActive });
+                    updateRecipeField("active", newActive);
+                  }}
+                  style={{
+                    width: isMobile ? '20px' : '22px',
+                    height: isMobile ? '20px' : '22px',
+                    cursor: 'pointer',
+                    accentColor: theme.accent.primary || '#4caf50'
+                  }}
+                />
+                <label
+                  htmlFor="recipe-active"
+                  style={{
+                    fontSize: isMobile ? '0.95rem' : '1rem',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    userSelect: 'none'
+                  }}
+                >
+                  מתכון פעיל
+                </label>
+              </div>
               <Input
                 label="מחיר מכירה"
                 type="number"
@@ -402,6 +439,7 @@ export default function RecipesManager({ user }) {
                 onBlur={() => updateRecipeField("sellingprice", selectedRecipe.sellingprice)}
                 min={1}
                 icon={<span style={{ fontWeight: 'bold', fontSize: isMobile ? '1.1rem' : '1.3rem' }}>₪</span>}
+                style={{ width: "50%" }}
               />
               <Button
                 title={"מחק מתכון"}

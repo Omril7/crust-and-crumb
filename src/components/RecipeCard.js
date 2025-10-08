@@ -10,6 +10,7 @@ const RecipeCard = ({ recipe, idx, selectedRecipe, setSelectedRecipe }) => {
 
   const styles = {
     card: {
+      position: 'relative',
       cursor: 'pointer',
       padding: isMobile ? '16px' : isTablet ? '18px' : '20px',
       borderRadius: theme.borderRadius?.navbar || '12px',
@@ -31,6 +32,17 @@ const RecipeCard = ({ recipe, idx, selectedRecipe, setSelectedRecipe }) => {
         maxWidth: '160px',
         fontSize: '14px',
       })
+    },
+    statusCircle: {
+      position: 'absolute',
+      top: isMobile ? '8px' : '10px',
+      left: isMobile ? '8px' : '10px',
+      width: isMobile ? '10px' : '12px',
+      height: isMobile ? '10px' : '12px',
+      borderRadius: '50%',
+      backgroundColor: recipe.active ? '#22c55e' : '#ef4444',
+      border: '2px solid #fff',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
     },
     title: {
       fontSize: isMobile ? '1rem' : isTablet ? '1.1rem' : '1.2rem',
@@ -74,6 +86,7 @@ const RecipeCard = ({ recipe, idx, selectedRecipe, setSelectedRecipe }) => {
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
+      <div style={styles.statusCircle} />
       <h3 style={styles.title}>{recipe.name}</h3>
       <p style={styles.info}>מחיר: ₪{recipe.sellingprice || 'לא הוגדר'}</p>
       <p style={styles.info}>משקל בצק: {recipe.doughweight} גרם</p>
