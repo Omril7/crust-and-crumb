@@ -17,8 +17,11 @@ const INIT_NEW_INGREDIENT = {
   qty: 1,
   unit: "קג",
   lowthreshold: "",
-  price_per_unit: 0
+  price_per_unit: 0,
+  type: "base", // "base" or "derived"
+  recipe: [] // for derived: [{ ingredientId, ratio }]
 };
+
 const INIT_UPDATED_INGREDIENT = {
   qty: 1,
   id: null
@@ -44,7 +47,17 @@ export default function Inventory({ user }) {
   useEffect(() => {
     const fetchInventory = async () => {
       setLoading(true);
-      const { data, error } = await supabase.from("inventory").select("*").order("lastupdate", { ascending: false });
+      const { data, error } = await supabase
+        .from("inventory")
+        .select(`
+          *,
+          inventory_recipe!inventory_recipe_derived_id_fkey(
+            *,
+            ingredient:inventory!inventory_recipe_ingredient_id_fkey(ingredient)
+          )
+        `)
+        .order("lastupdate", { ascending: false });
+
 
       if (error) {
         console.error("Error fetching inventory:", error.message);
@@ -57,35 +70,66 @@ export default function Inventory({ user }) {
     fetchInventory();
   }, []);
 
+  // Add ingredient
   const addIngredient = async () => {
-    if (!(newIngredient.ingredient && newIngredient.qty && newIngredient.unit && newIngredient.lowthreshold && newIngredient.price_per_unit)) {
+    const { ingredient, qty, unit, lowthreshold, price_per_unit, type, recipe } = newIngredient;
+    if (!(ingredient && qty && unit && lowthreshold && price_per_unit)) {
       await alert("לא חסר לך משהו אהבל? אולי מרכיב? אולי כמות? אולי המינימום שלך?");
       return;
-    };
+    }
 
-    const { data, error } = await supabase
+    const { data: ingredientData, error } = await supabase
       .from("inventory")
-      .insert([
-        {
-          user_id: user.id,
-          ingredient: newIngredient.ingredient,
-          qty: parseFloat(newIngredient.qty),
-          unit: newIngredient.unit,
-          lowthreshold: parseFloat(newIngredient.lowthreshold),
-          price_per_unit: parseFloat(newIngredient.price_per_unit)
-        }
-      ])
-      .select();
+      .insert([{
+        user_id: user.id,
+        ingredient,
+        qty: parseFloat(qty),
+        unit,
+        lowthreshold: parseFloat(lowthreshold),
+        price_per_unit: parseFloat(price_per_unit),
+        type
+      }])
+      .select()
+      .single();
 
     if (error) {
       console.error("Error adding ingredient:", error.message);
       return;
     }
 
-    setInventory([...inventory, ...data]);
+    const ingredientId = ingredientData.id;
+
+    if (type === "derived" && recipe.length > 0) {
+      for (const r of recipe) {
+        if (!r.ingredientId || !r.ratio) continue;
+
+        // insert recipe row
+        await supabase.from("inventory_recipe").insert([{
+          user_id: user.id,
+          derived_id: ingredientId,
+          ingredient_id: r.ingredientId,
+          ratio: r.ratio
+        }]);
+
+        // reduce base ingredient qty only if it is not unlimited
+        const base = inventory.find(i => i.id === r.ingredientId);
+        if (!base || base.qty === -1000) continue;
+
+        const usedQty = (r.ratio / 100) * parseFloat(qty);
+
+        await supabase
+          .from("inventory")
+          .update({ qty: base.qty - usedQty })
+          .eq("id", r.ingredientId);
+      }
+    }
+
+    setInventory([...inventory, ingredientData]);
     setNewIngredient(INIT_NEW_INGREDIENT);
   };
 
+
+  // Update ingredient qty (same for base or derived)
   const updateIngredient = async () => {
     if (!(updatedIngredient.id && updatedIngredient.qty)) {
       await alert("לא חסר לך משהו אהבל? אולי מרכיב? אולי כמות?");
@@ -118,6 +162,7 @@ export default function Inventory({ user }) {
     setUpdatedIngredient(INIT_UPDATED_INGREDIENT);
   };
 
+  // Remove ingredient
   const removeIngredient = async (id) => {
     const ok = await confirm(
       "האם אתה בטוח שברצונך למחוק מרכיב זה? מחיקה שלו תסיר אותו מכל המתכונים בהם הוא מופיע, והמתכונים ישתנו בהתאם."
@@ -135,97 +180,61 @@ export default function Inventory({ user }) {
     setInventory(inventory.filter((o) => o.id !== id));
   };
 
-  const startEditQty = (id, value) => {
-    setEditingQty({ id, value: value.toString() });
-  };
-
+  // Editable fields helpers
+  const startEditQty = (id, value) => setEditingQty({ id, value: value.toString() });
   const saveEditQty = async () => {
     if (!editingQty) return;
     const { id, value } = editingQty;
-
     const { data, error } = await supabase
       .from("inventory")
       .update({ qty: parseFloat(value) })
       .eq("id", id)
-      .select("id, ingredient, qty, unit, lowthreshold, lastupdate, price_per_unit")
-      .single(); // ensures only one row
-
-
-    if (error) {
-      console.error("Error updating qty:", error.message);
-      return;
-    }
-
-    if (!error && data) {
-      setInventory(inventory.map(i => i.id === id ? data : i));
-    }
-
+      .select()
+      .single();
+    if (!error && data) setInventory(inventory.map(i => i.id === id ? data : i));
     setEditingQty(null);
   };
 
-  const startEditLowthreshold = (id, value) => {
-    setEditingLowthreshold({ id, value: value.toString() });
-  };
-
+  const startEditLowthreshold = (id, value) => setEditingLowthreshold({ id, value: value.toString() });
   const saveEditLowthreshold = async () => {
     if (!editingLowthreshold) return;
     const { id, value } = editingLowthreshold;
-
     const { data, error } = await supabase
       .from("inventory")
       .update({ lowthreshold: parseFloat(value) })
       .eq("id", id)
-      .select("id, ingredient, qty, unit, lowthreshold, lastupdate, price_per_unit")
-      .single(); // ensures only one row
-
-
-    if (error) {
-      console.error("Error updating lowthreshold:", error.message);
-      return;
-    }
-
-    if (!error && data) {
-      setInventory(inventory.map(i => i.id === id ? data : i));
-    }
-
+      .select()
+      .single();
+    if (!error && data) setInventory(inventory.map(i => i.id === id ? data : i));
     setEditingLowthreshold(null);
   };
 
-  const startEditPrice = (id, value) => {
-    setEditingPrice({ id, value: value.toString() });
-  };
-
+  const startEditPrice = (id, value) => setEditingPrice({ id, value: value.toString() });
   const saveEditPrice = async () => {
     if (!editingPrice) return;
     const { id, value } = editingPrice;
-
     const { data, error } = await supabase
       .from("inventory")
       .update({ price_per_unit: parseFloat(value) })
       .eq("id", id)
-      .select("id, ingredient, qty, unit, lowthreshold, lastupdate, price_per_unit")
-      .single(); // ensures only one row
-
-
-    if (error) {
-      console.error("Error updating price_per_unit:", error.message);
-      return;
-    }
-
-    if (!error && data) {
-      setInventory(inventory.map(i => i.id === id ? data : i));
-    }
-
+      .select()
+      .single();
+    if (!error && data) setInventory(inventory.map(i => i.id === id ? data : i));
     setEditingPrice(null);
   };
 
   const sortedInventory = [...inventory].sort((a, b) => {
+    // Unlimited items always last
+    if (a.qty === -1000 && b.qty !== -1000) return 1;
+    if (b.qty === -1000 && a.qty !== -1000) return -1;
+    if (a.qty === -1000 && b.qty === -1000) return 0;
+
+    // Normal low-stock sorting
     const aLow = parseFloat(a.qty || 0) < parseFloat(a.lowthreshold || 0);
     const bLow = parseFloat(b.qty || 0) < parseFloat(b.lowthreshold || 0);
-
-    if (aLow === bLow) return 0;
-    return aLow ? -1 : 1;
+    return aLow === bLow ? 0 : aLow ? -1 : 1;
   });
+
 
   const styles = {
     gridContainer: {
@@ -303,9 +312,7 @@ export default function Inventory({ user }) {
         key: "alert",
         label: "",
         render: (_, row) =>
-          parseFloat(row.qty || 0) < parseFloat(row.lowthreshold || 0) ? (
-            <TriangleAlert size={isMobile ? 18 : 20} color="orange" />
-          ) : null
+          row.type === "derived" || parseFloat(row.qty || 0) >= parseFloat(row.lowthreshold || 0) ? null : <TriangleAlert size={isMobile ? 18 : 20} color="orange" />
       },
       { key: "ingredient", label: "מרכיב" },
       {
@@ -313,7 +320,7 @@ export default function Inventory({ user }) {
         label: "כמות",
         render: (value, row) => (
           <>
-            {value === -1000 ? (
+            {value === -1000 || row.type === "derived" ? (
               <Infinity />
             ) : (
               <div
@@ -339,12 +346,13 @@ export default function Inventory({ user }) {
 
         )
       },
+      { key: "type", label: "סוג", render: (_, row) => row.type === "base" ? "בסיסי" : "נגזר" },
       {
         key: "lowthreshold",
         label: "מינימום",
         render: (value, row) => (
           <>
-            {value === -1000 ? (
+            {value === -1000 || row.type === "derived" ? (
               <Infinity />
             ) : (
               <div
@@ -461,6 +469,13 @@ export default function Inventory({ user }) {
                 style={{ width: '100%', fontSize: '16px' }}
               />
               <Select
+                label="סוג מרכיב"
+                value={newIngredient.type}
+                onChange={e => setNewIngredient({ ...newIngredient, type: e.target.value })}
+                options={[{ name: 'בסיסי', value: "base" }, { name: "נגזר", value: "derived" }]}
+              />
+
+              <Select
                 label="מידה"
                 value={newIngredient.unit}
                 onChange={e => setNewIngredient({ ...newIngredient, unit: e.target.value })}
@@ -491,6 +506,55 @@ export default function Inventory({ user }) {
                 onClick={addIngredient}
               />
             </div>
+            {newIngredient.type === "derived" && (
+              <div style={{ marginTop: 10 }}>
+                <h4>מרכיבים במוצר נגזר</h4>
+                {newIngredient.recipe.map((r, idx) => (
+                  <div style={{ display: 'flex', gap: "16px", marginBottom: "10px" }}>
+                    <div key={idx} style={styles.formGrid(isMobile || isTablet ? '1' : '2')}>
+                      <SelectWithSearchBar
+                        label="מרכיב"
+                        value={r.ingredientId || ""}
+                        onChange={e => {
+                          const updatedRecipe = [...newIngredient.recipe];
+                          updatedRecipe[idx].ingredientId = e.target.value;
+                          setNewIngredient({ ...newIngredient, recipe: updatedRecipe });
+                        }}
+                        icon={<IceCreamBowl size={18} />}
+                        options={inventory.filter(i => i.type === "base").map(i => ({ name: i.ingredient, value: i.id }))}
+                        style={{ width: '100%', fontSize: '16px' }}
+                      />
+                      <Input
+                        label="% מהכמות"
+                        type="number"
+                        value={r.ratio || 0}
+                        onChange={e => {
+                          const updatedRecipe = [...newIngredient.recipe];
+                          updatedRecipe[idx].ratio = parseFloat(e.target.value);
+                          setNewIngredient({ ...newIngredient, recipe: updatedRecipe });
+                        }}
+                        style={{ width: '100%', fontSize: '16px' }}
+                      />
+                    </div>
+                    <Button
+                      title="X"
+                      onClick={() => {
+                        const updatedRecipe = newIngredient.recipe.filter((_, i) => i !== idx);
+                        setNewIngredient({ ...newIngredient, recipe: updatedRecipe });
+                      }}
+                    />
+                  </div>
+                ))}
+                <Button
+                  title="הוסף מרכיב"
+                  onClick={() => setNewIngredient({
+                    ...newIngredient,
+                    recipe: [...newIngredient.recipe, { ingredientId: null, ratio: 50 }]
+                  })}
+                />
+              </div>
+            )}
+
           </div>
 
           <div style={{ width: '90%' }}>

@@ -26,6 +26,7 @@ export const Input = ({
       position: 'relative',
       display: 'inline-block',
       width: '100%',
+      maxWidth: "400px",
       ...style,
     },
     inputGroup: {
@@ -314,8 +315,8 @@ export const Select = ({
         >
           <option value="" disabled hidden></option>
           {options.map((opt, idx) => (
-            <option key={idx} value={opt}>
-              {opt}
+            <option key={idx} value={opt?.value ?? opt}>
+              {opt?.name ?? opt}
             </option>
           ))}
         </select>
@@ -357,9 +358,8 @@ export const SelectWithSearchBar = ({
 
   const styles = {
     container: {
-      position: "relative",
-      display: "inline-block",
-      width: "220px",
+      position: 'relative',
+      display: 'inline-block',
       ...style,
     },
     selectBox: {

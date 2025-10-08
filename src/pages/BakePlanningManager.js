@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight, X, Calendar, Croissant, Hash, PlusSquare, TreePalm, NotebookPen } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Calendar, Croissant, Hash, PlusSquare, TreePalm, NotebookPen, Repeat } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useScreenSize } from '../hooks/useScreenSize';
-import { useIndexedDB } from '../hooks/useIndexedDB';
 import Container from '../components/Container';
 import Header from '../components/Header';
 import { Button, Input, Select } from '../components/components';
@@ -18,12 +17,12 @@ export default function BakePlanningManager({ user }) {
   const [loading, setLoading] = useState(false);
 
   const [selectedDate, setSelectedDate] = useState(null);
-  const [newEntry, setNewEntry] = useState({ recipe: '', qty: 1 });
+  const [newEntry, setNewEntry] = useState({ recipe: '', qty: 1, repeatWeekly: false, repeatWeeks: 4 });
+  const [notes, setNotes] = useState('');
 
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
-  const [notes, setNotes] = useState(null);
 
   const formatDate = (date) => {
     const year = date.getFullYear();
@@ -43,10 +42,6 @@ export default function BakePlanningManager({ user }) {
   };
 
   const days = getDaysInMonth(year, month);
-
-  useEffect(() => {
-    console.log(events[selectedDate])
-  }, [selectedDate])
 
   // ================= Fetch Recipes =================
   useEffect(() => {
@@ -123,8 +118,12 @@ export default function BakePlanningManager({ user }) {
           qty: er.qty,
           eventId: ev.id,
           isHoliday: false,
-          notes: ev.notes || null,
+          notes: ev.notes || null
         }));
+        // If no recipes but event exists, add placeholder
+        if (grouped[day].length === 0) {
+          grouped[day].push({ recipe: '', qty: 0, eventId: ev.id, isHoliday: false, notes: ev.notes || '' });
+        }
       });
 
       // --- fetch holidays for this month ---
@@ -143,141 +142,194 @@ export default function BakePlanningManager({ user }) {
     fetchEvents();
   }, [year, month]);
 
+  // ================= Modal =================
   const openModal = (date) => {
     const dayStr = formatDate(date);
     setSelectedDate(dayStr);
 
-    // default notes if this day has an event with notes
-    const existingNotes = events[dayStr]?.[0]?.notes || "";
-    setNotes(existingNotes);
+    let dayEvents = events[dayStr] || [];
 
-    setNewEntry({ recipe: '', qty: 1 });
+    // Check if there's a non-holiday event
+    let eventForDay = dayEvents.find(ev => !ev.isHoliday);
+
+    // If no recipes (non-holiday events), create placeholder
+    if (!eventForDay) {
+      const placeholder = { recipe: '', qty: 0, eventId: null, isHoliday: false, notes: '' };
+      setEvents(prev => ({
+        ...prev,
+        [dayStr]: [placeholder, ...dayEvents] // keep holidays if any
+      }));
+      eventForDay = placeholder;
+    }
+
+    setNotes(eventForDay.notes || '');
+    setNewEntry({ recipe: '', qty: 1, repeatWeekly: false, repeatWeeks: 4 });
   };
 
   const closeModal = () => setSelectedDate(null);
 
+  // ================= Add Event with Weekly Repeat =================
   const addEvent = async () => {
     if (!newEntry.recipe || newEntry.qty <= 0) return;
 
-    // check if event exists for this date
-    let eventId;
-    const { data: existingEvent, error: evErr } = await supabase
-      .from('events')
-      .select('id')
-      .eq('event_date', selectedDate)
-      .maybeSingle();
-
-    if (evErr) {
-      console.error(evErr);
-      return;
-    }
-
-    if (existingEvent) {
-      eventId = existingEvent.id;
-    } else {
-      const { data: newEvent, error: newErr } = await supabase
-        .from('events')
-        .insert([{ event_date: selectedDate, user_id: user.id }])
-        .select()
-        .single();
-
-      if (newErr) {
-        console.error(newErr);
-        return;
-      }
-      eventId = newEvent.id;
-    }
-
-    // insert event_recipe
     const selectedRecipe = recipes.find(r => r.name === newEntry.recipe);
+    if (!selectedRecipe) return;
 
-    const { error: erErr } = await supabase
-      .from('event_recipes')
-      .insert([{ event_id: eventId, recipe_id: selectedRecipe.id, qty: newEntry.qty }]);
+    // Calculate dates to add (including original date)
+    const datesToAdd = [selectedDate];
+    
+    if (newEntry.repeatWeekly) {
+      const startDate = new Date(selectedDate);
+      const maxWeeks = Math.min(newEntry.repeatWeeks, 52); // Max 1 year
+      
+      for (let i = 1; i <= maxWeeks; i++) {
+        const nextDate = new Date(startDate);
+        nextDate.setDate(startDate.getDate() + (i * 7));
+        datesToAdd.push(formatDate(nextDate));
+      }
+    }
 
-    if (erErr) console.error(erErr);
+    // Add events for all dates
+    for (const dateStr of datesToAdd) {
+      let eventId;
+      const existingEvent = events[dateStr]?.find(ev => !ev.isHoliday);
 
-    // refetch events
-    const fetchEventsAgain = async () => {
-      const { data } = await supabase
-        .from('events')
-        .select(`
+      if (existingEvent && existingEvent.eventId) {
+        eventId = existingEvent.eventId;
+      } else {
+        const { data: newEvent, error } = await supabase
+          .from('events')
+          .insert([{ event_date: dateStr, user_id: user.id }])
+          .select()
+          .single();
+
+        if (error) {
+          console.error(error);
+          continue;
+        }
+        eventId = newEvent.id;
+      }
+
+      const { error: erErr } = await supabase
+        .from('event_recipes')
+        .insert([{ event_id: eventId, recipe_id: selectedRecipe.id, qty: newEntry.qty }]);
+      
+      if (erErr) console.error(erErr);
+    }
+
+    // Refresh the current month view
+    const startDate = formatDate(new Date(year, month, 1));
+    const endDate = formatDate(new Date(year, month + 1, 0));
+
+    const { data: refreshedData } = await supabase
+      .from('events')
+      .select(`
+        id,
+        event_date,
+        notes,
+        event_recipes (
           id,
-          event_date,
-          notes,
-          event_recipes (
-            id,
-            qty,
-            recipe_id,
-            recipes ( name )
-          )
-        `)
-        .eq('event_date', selectedDate);
+          qty,
+          recipe_id,
+          recipes ( name )
+        )
+      `)
+      .gte('event_date', startDate)
+      .lte('event_date', endDate);
 
-      if (data) {
-        // baking events from Supabase
-        const bakingEvents = data[0]?.event_recipes.map(er => ({
+    if (refreshedData) {
+      const grouped = {};
+      refreshedData.forEach(ev => {
+        const day = ev.event_date;
+        grouped[day] = ev.event_recipes.map(er => ({
           id: er.id,
           recipeId: er.recipe_id,
-          recipe: er.recipes?.name,
+          recipe: er.recipes?.name || 'מתכון לא ידוע',
           qty: er.qty,
-          eventId: data[0].id,
+          eventId: ev.id,
           isHoliday: false,
-          notes: data[0].notes || null,
-        })) || [];
+          notes: ev.notes || null
+        }));
+      });
 
-        // keep existing holiday events for this day
-        const existingHolidayEvents = (events[selectedDate] || []).filter(ev => ev.isHoliday);
+      // Preserve holidays
+      Object.keys(events).forEach(date => {
+        const holidays = events[date].filter(ev => ev.isHoliday);
+        if (holidays.length > 0) {
+          grouped[date] = [...(grouped[date] || []), ...holidays];
+        }
+      });
 
-        setEvents({
-          ...events,
-          [selectedDate]: sortEvents([...existingHolidayEvents, ...bakingEvents]),
-        });
+      setEvents(grouped);
+    }
 
-      }
-    };
-
-    fetchEventsAgain();
+    // Reset form
+    setNewEntry({ recipe: '', qty: 1, repeatWeekly: false, repeatWeeks: 4 });
   };
 
+  // ================= Remove Event Recipe =================
   const removeEvent = async (eventRecipeId) => {
     const { error } = await supabase
       .from('event_recipes')
       .delete()
       .eq('id', eventRecipeId);
-
     if (error) console.error(error);
 
-    // update local state
-    const newEvents = { ...events };
-    newEvents[selectedDate] = newEvents[selectedDate].filter(ev => ev.id !== eventRecipeId);
-    if (newEvents[selectedDate].length === 0) {
-      delete newEvents[selectedDate];
-    }
-    setEvents(newEvents);
+    setEvents(prev => ({
+      ...prev,
+      [selectedDate]: prev[selectedDate].filter(ev => ev.id !== eventRecipeId)
+    }));
   };
 
   const saveNotes = async () => {
-    if (!notes || !selectedDate) return;
+    if (!selectedDate || (!notes && !events[selectedDate]?.find(ev => !!ev.notes))) return;
 
-    // find the event_id for this day (only 1 event row per date)
-    const eventForDay = events[selectedDate]?.find(ev => !ev.isHoliday);
-    if (!eventForDay?.eventId) return;
+    // Find non-holiday event for this day
+    let eventForDay = events[selectedDate]?.find(ev => !ev.isHoliday);
 
-    const { error } = await supabase
+    // === If no event exists yet, create one ===
+    if (!eventForDay || !eventForDay.eventId) {
+      const { data: newEvent, error: createError } = await supabase
+        .from('events')
+        .insert([{ event_date: selectedDate, user_id: user.id, notes }])
+        .select()
+        .single();
+
+      if (createError) {
+        console.error("Error creating event for notes:", createError);
+        return;
+      }
+
+      // Update local state
+      setEvents(prev => ({
+        ...prev,
+        [selectedDate]: [
+          { recipe: '', qty: 0, eventId: newEvent.id, isHoliday: false, notes },
+          ...(prev[selectedDate] || [])
+        ]
+      }));
+
+      return;
+    }
+
+    // === Otherwise, update existing event ===
+    const { error: updateError } = await supabase
       .from('events')
       .update({ notes })
       .eq('id', eventForDay.eventId);
 
-    if (error) {
-      console.error("Failed to save notes:", error);
+    if (updateError) {
+      console.error("Error updating notes:", updateError);
       return;
     }
 
-    // update local state
-    const updatedEvents = { ...events };
-    updatedEvents[selectedDate] = updatedEvents[selectedDate].map(ev => ({ ...ev, notes }));
-    setEvents(updatedEvents);
+    // Update notes in state
+    setEvents(prev => ({
+      ...prev,
+      [selectedDate]: prev[selectedDate].map(ev =>
+        ev.isHoliday ? ev : { ...ev, notes }
+      )
+    }));
   };
 
   const prevMonth = () => {
@@ -365,16 +417,31 @@ export default function BakePlanningManager({ user }) {
       backgroundColor: 'white',
     },
     dayHasEvents: {
-      background: theme.colors.primaryGradient
+      background: `linear-gradient(135deg, ${theme.accent.primary}66, ${theme.accent.primary}33)`,
+      border: `1px solid ${theme.accent.primary}`,
+      borderBottom: `5px solid ${theme.accent.primary}`,
+    },
+    dayHolidayOnly: {
+      border: `1px solid ${theme.accent.info}`,
+      borderBottom: `5px solid ${theme.accent.info}`,
+    },
+    notesOnly: {
+      background: `linear-gradient(135deg, ${theme.accent.success}66, ${theme.accent.success}33)`,
+      border: `1px solid ${theme.accent.success}`,
+      borderBottom: `5px solid ${theme.accent.success}`,
     },
     dayToday: {
-      border: `2px solid ${theme.colors.textLight}`
+      border: `2px solid ${theme.colors.textLight}`,
+      boxShadow: '0 4px 12px rgba(139, 105, 20, 0.7)'
     },
-    dayNumber: {
+    dayNumber: (isToday) => ({
       fontWeight: 'bold',
-      color: theme.colors.textPrimary,
-      fontSize: isMobile ? '0.9rem' : '1rem'
-    },
+      color: isToday ? "white" : "black",
+      fontSize: isMobile ? '0.9rem' : '1rem',
+      background: isToday ? "black" : "none",
+      padding: "2px 5px",
+      borderRadius: "5px"
+    }),
     modalBackdrop: {
       position: 'fixed',
       top: 0,
@@ -449,9 +516,28 @@ export default function BakePlanningManager({ user }) {
       fontSize: isMobile ? '0.9rem' : '1rem',
       wordBreak: isMobile ? 'break-word' : 'normal'
     },
-    dayHolidayOnly: {
-      background: `linear-gradient(135deg, ${theme.accent.info}66, ${theme.accent.info}33)`,
-      border: `1px solid ${theme.accent.info}`,
+    checkboxContainer: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8,
+      marginTop: 10,
+      marginBottom: 10,
+      padding: '8px',
+      backgroundColor: '#f8f9fa',
+      borderRadius: '6px'
+    },
+    checkbox: {
+      width: isMobile ? 18 : 16,
+      height: isMobile ? 18 : 16,
+      cursor: 'pointer'
+    },
+    checkboxLabel: {
+      cursor: 'pointer',
+      fontSize: isMobile ? '0.95rem' : '0.9rem',
+      color: theme.colors.textPrimary,
+      display: 'flex',
+      alignItems: 'center',
+      gap: 5
     }
   };
 
@@ -462,6 +548,7 @@ export default function BakePlanningManager({ user }) {
         icon={<Calendar size={isMobile ? 28 : 32} />}
       />
 
+      {/* Month Navigation */}
       <div style={styles.monthNav}>
         <button
           style={styles.navBtn}
@@ -489,27 +576,23 @@ export default function BakePlanningManager({ user }) {
         </button>
       </div>
 
+      {/* Weekdays */}
       <div style={styles.weekdays}>
-        {['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'].map((day) => (
-          <div key={day}>{day}</div>
-        ))}
+        {['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'].map(day => <div key={day}>{day}</div>)}
       </div>
 
-      {loading ? (
-        <LinearLoader />
-      ) : (
+      {loading ? <LinearLoader /> : (
         <div style={styles.daysGrid}>
-          {Array(days[0].getDay()).fill(null).map((_, i) => (
-            <div key={'empty-' + i} />
-          ))}
-          {days.map((day) => {
+          {Array(days[0].getDay()).fill(null).map((_, i) => <div key={'empty-' + i} />)}
+          {days.map(day => {
             const dayStr = formatDate(day);
             const eventsForDay = events[dayStr] || [];
-            const hasEvents = eventsForDay.length > 0;
+            const hasEvents = eventsForDay.filter(ev => !ev.isHoliday && ev.qty > 0).length > 0;
             const isToday = dayStr === formatDate(today);
 
             const hasHoliday = eventsForDay.some(ev => ev.isHoliday);
-            const hasBaking = eventsForDay.some(ev => !ev.isHoliday);
+            const hasBaking = eventsForDay.some(ev => !ev.isHoliday && ev.qty > 0);
+            const hasNotes = eventsForDay.some(ev => !!ev.notes);
             const isHolidayOnly = hasHoliday && !hasBaking;
 
             return (
@@ -523,16 +606,19 @@ export default function BakePlanningManager({ user }) {
                     ? styles.dayHolidayOnly
                     : hasEvents
                       ? styles.dayHasEvents
-                      : {})
+                      : hasNotes
+                        ? styles.notesOnly
+                        : {}
+                  )
                 }}
                 onMouseEnter={(e) => !isMobile && (e.currentTarget.style.transform = 'scale(1.03)')}
                 onMouseLeave={(e) => !isMobile && (e.currentTarget.style.transform = 'scale(1)')}
                 title={hasEvents ? `יש אירועים בתאריך זה` : 'אין אירועים'}
               >
-                <div style={styles.dayNumber}>{day.getDate()}</div>
+                <div style={styles.dayNumber(isToday)}>{day.getDate()}</div>
 
                 {/* Events list */}
-                {hasEvents && !isMobile && (
+                {(hasEvents || hasNotes) && !isMobile && (
                   <ul style={{
                     listStyle: 'none',
                     padding: 0,
@@ -541,7 +627,7 @@ export default function BakePlanningManager({ user }) {
                     textAlign: 'center',
                     width: '100%'
                   }}>
-                    {eventsForDay.map((ev, idx) => (
+                    {hasEvents && eventsForDay.map((ev, idx) => (
                       <li
                         key={idx}
                         style={{
@@ -552,9 +638,14 @@ export default function BakePlanningManager({ user }) {
                         }}
                       >
                         {!ev.isHoliday && `${ev.recipe}${ev.qty ? ` (${ev.qty})` : ''}`}
-
                       </li>
                     ))}
+                    {hasNotes && (
+                      <li style={{ display: "flex", gap: 5, justifyContent: "center", alignItems: "center" }}>
+                        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', lineHeight: isMobile ? '1.2' : '1.3' }}>צפה בהערה</span>
+                        <NotebookPen size={isMobile ? 16 : 14} />
+                      </li>
+                    )}
                   </ul>
                 )}
               </div>
@@ -564,6 +655,7 @@ export default function BakePlanningManager({ user }) {
         </div>
       )}
 
+      {/* Modal */}
       {selectedDate && (
         <div style={styles.modalBackdrop} onClick={closeModal}>
           <div style={styles.modal} onClick={e => e.stopPropagation()}>
@@ -576,33 +668,64 @@ export default function BakePlanningManager({ user }) {
               {selectedDate}
             </h3>
 
-            <div style={{ marginBottom: 15 }}>
-              <Select
-                label="בחר מתכון"
-                value={newEntry.recipe}
-                onChange={e => setNewEntry({ ...newEntry, recipe: e.target.value })}
-                options={recipes.map(recipe => recipe.name)}
-                icon={<Croissant size={isMobile ? 20 : 18} />}
-                style={{
-                  width: '100%',
-                  fontSize: isMobile ? '16px' : '14px'
-                }}
+            <Select
+              label="בחר מתכון"
+              value={newEntry.recipe}
+              onChange={e => setNewEntry({ ...newEntry, recipe: e.target.value })}
+              options={recipes.map(recipe => recipe.name)}
+              icon={<Croissant size={isMobile ? 20 : 18} />}
+              style={{
+                width: '100%',
+                fontSize: isMobile ? '16px' : '14px',
+                marginBottom: 15
+              }}
+            />
+
+            <Input
+              label="כמות"
+              type="number"
+              min={1}
+              value={newEntry.qty}
+              onChange={e => setNewEntry({ ...newEntry, qty: Number(e.target.value) })}
+              icon={<Hash size={isMobile ? 20 : 18} />}
+              style={{
+                fontSize: isMobile ? '16px' : '14px',
+                marginBottom: 15,
+                width: "50%"
+              }}
+            />
+
+            {/* Weekly Repeat Option */}
+            <div style={styles.checkboxContainer}>
+              <input
+                type="checkbox"
+                id="repeatWeekly"
+                checked={newEntry.repeatWeekly}
+                onChange={e => setNewEntry({ ...newEntry, repeatWeekly: e.target.checked })}
+                style={styles.checkbox}
               />
+              <label htmlFor="repeatWeekly" style={styles.checkboxLabel}>
+                <Repeat size={isMobile ? 18 : 16} />
+                חזור כל שבוע
+              </label>
             </div>
 
-            <div style={{ marginBottom: 15 }}>
+            {/* Number of Weeks to Repeat */}
+            {newEntry.repeatWeekly && (
               <Input
-                label="כמות"
+                label="מספר שבועות (מקסימום 52)"
                 type="number"
                 min={1}
-                value={newEntry.qty}
-                onChange={e => setNewEntry({ ...newEntry, qty: Number(e.target.value) })}
-                icon={<Hash size={isMobile ? 20 : 18} />}
+                max={52}
+                value={newEntry.repeatWeeks}
+                onChange={e => setNewEntry({ ...newEntry, repeatWeeks: Math.min(52, Math.max(1, Number(e.target.value))) })}
+                icon={<Repeat size={isMobile ? 20 : 18} />}
                 style={{
-                  fontSize: isMobile ? '16px' : '14px'
+                  fontSize: isMobile ? '16px' : '14px',
+                  marginBottom: 15
                 }}
               />
-            </div>
+            )}
 
             <Button
               title="הוסף"
@@ -611,26 +734,25 @@ export default function BakePlanningManager({ user }) {
               disabled={!newEntry.recipe || newEntry.qty <= 0}
             />
 
-            <div style={{ marginBottom: 15, marginTop: 15 }}>
-              <Input
-                label="הערות"
-                value={notes}
-                onChange={e => setNotes(e.target.value)}
-                onBlur={saveNotes}
-                icon={<NotebookPen size={isMobile ? 20 : 18} />}
-                rows={2}
-                style={{
-                  width: '100%',
-                  fontSize: isMobile ? '16px' : '14px'
-                }}
-              />
-            </div>
+            <Input
+              label="הערות"
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              onBlur={saveNotes}
+              icon={<NotebookPen size={isMobile ? 20 : 18} />}
+              rows={2}
+              style={{
+                width: '100%',
+                fontSize: isMobile ? '16px' : '14px',
+                marginTop: 15,
+                marginBottom: 15
+              }}
+            />
 
             <h4 style={{
               marginTop: 20,
               marginBottom: 10,
               color: theme.textPrimary,
-              fontSize: isMobile ? '1.1rem' : '1.2rem'
             }}>
               אירועים לתאריך זה
             </h4>
@@ -645,16 +767,20 @@ export default function BakePlanningManager({ user }) {
                       </span>
                     ) : (
                       <>
-                        <button
-                          style={styles.removeBtn}
-                          onClick={() => removeEvent(ev.id)}
-                          title="מחק אירוע"
-                        >
-                          <X size={isMobile ? 18 : 16} />
-                        </button>
-                        <span style={styles.eventText}>
-                          {ev.recipe} - כמות: {ev.qty}
-                        </span>
+                        {ev.recipe && (
+                          <>
+                            <button
+                              style={styles.removeBtn}
+                              onClick={() => removeEvent(ev.id)}
+                              title="מחק אירוע"
+                            >
+                              <X size={isMobile ? 18 : 16} />
+                            </button>
+                            <span style={styles.eventText}>
+                              {ev.recipe} - כמות: {ev.qty}
+                            </span>
+                          </>
+                        )}
                       </>
                     )}
                   </li>

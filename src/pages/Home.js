@@ -3,9 +3,11 @@ import { CalendarDays, BookOpen, Package } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { supabase } from '../supabaseClient';
 import CircularLoader from '../components/CircularLoader';
+import { useNavigate } from 'react-router-dom';
 
 const Home = ({ user }) => {
   const { theme } = useTheme();
+  const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
   const [lowStockCount, setLowStockCount] = useState(0);
@@ -22,10 +24,38 @@ const Home = ({ user }) => {
       const { data: inventory, error: invError } = await supabase.from("inventory").select("*").eq("user_id", user.id);
 
       if (!invError && inventory) {
-        setLowStockCount(inventory.filter((item) => item.qty >= 0 && item.qty <= item.lowthreshold).length);
+        // Count low stock items
+        setLowStockCount(inventory.filter(item => item.qty >= 0 && item.qty <= item.lowThreshold).length);
+
+        // Find derived ingredients
+        const derivedItems = inventory.filter(item => item.type === "derived");
+        if (derivedItems.length > 0) {
+          for (const derived of derivedItems) {
+            // Get recipe for this derived ingredient
+            const { data: recipeRows, error: recipeError } = await supabase
+              .from("inventory_recipe")
+              .select("*")
+              .eq("user_id", user.id)
+              .eq("derived_id", derived.id);
+
+            if (!recipeError && recipeRows) {
+              for (const r of recipeRows) {
+                // Find the base ingredient
+                const base = inventory.find(i => i.id === r.ingredient_id);
+                if (!base) continue;
+
+                // Optional: recalculate remaining quantity if needed
+                // For example, if you want to adjust inventory based on derived qty
+                const usedQty = (r.ratio / 100) * derived.qty;
+                // Update local state or optionally write back to Supabase
+                base.remainingQty = base.qty - usedQty;
+              }
+            }
+          }
+        }
       }
 
-      // 🔹 Recipes
+      // 🔹 Recipes count
       const { count: recipesCount, error: recError } = await supabase.from("recipes").select("id", { count: "exact", head: true }).eq("user_id", user.id);
 
       if (!recError) {
@@ -38,10 +68,7 @@ const Home = ({ user }) => {
 
       const { data: events, error: evError } = await supabase
         .from("events")
-        .select(`
-          id,
-          event_recipes(id)
-        `)
+        .select(`id, event_recipes(id)`)
         .eq("user_id", user.id)
         .gte("event_date", today.toISOString())
         .lt("event_date", firstDayOfNextMonth.toISOString());
@@ -51,12 +78,32 @@ const Home = ({ user }) => {
         setUpcomingEventsCount(countWithRecipes);
       }
 
-
       setLoading(false);
     };
 
     fetchStats();
   }, []);
+
+  const cards = [
+    {
+      title: "כמות מתכונים",
+      value: recipesCount,
+      href: "/recipes",
+      Icon: BookOpen
+    },
+    {
+      title: "ימי אפייה בחודש הקרוב",
+      value: upcomingEventsCount,
+      href: "/bakePlanning",
+      Icon: CalendarDays
+    },
+    {
+      title: "מוצרים במלאי נמוך",
+      value: lowStockCount,
+      href: "/inventory",
+      Icon: Package
+    }
+  ];
 
   // Styles
   const styles = {
@@ -64,12 +111,10 @@ const Home = ({ user }) => {
       direction: 'rtl',
       fontFamily: 'system-ui, -apple-system, sans-serif'
     },
-    mainContent: {
-      padding: '32px 16px'
-    },
     contentContainer: {
       maxWidth: '1280px',
-      margin: '0 auto'
+      margin: '0 auto',
+      padding: '16px'
     },
     pageTitle: {
       fontSize: '36px',
@@ -91,7 +136,8 @@ const Home = ({ user }) => {
       padding: '24px',
       border: '1px solid rgba(217, 160, 102, 0.2)',
       boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-      textAlign: 'center'
+      textAlign: 'center',
+      cursor: "pointer"
     },
     statIcon: {
       width: '48px',
@@ -114,43 +160,23 @@ const Home = ({ user }) => {
   return (
     <div style={styles.container}>
       {/* Main Content */}
-      <main style={styles.mainContent}>
-        <div style={styles.contentContainer}>
-          <h1 style={styles.pageTitle}>לוח בקרה - Crust & Crumb</h1>
+      <div style={styles.contentContainer}>
+        <h1 style={styles.pageTitle}>Crust & Crumb</h1>
 
-          <div style={styles.statsGrid}>
-            <div style={styles.statCard}>
+        <div style={styles.statsGrid}>
+          {cards.map((card, index) => (
+            <div key={index} style={styles.statCard} onClick={() => navigate(card.href)}>
               <div style={styles.statIconWrapper}>
-                <CalendarDays style={styles.statIcon} />
+                <card.Icon style={styles.statIcon} />
               </div>
               <div style={styles.statNumber}>
-                {loading ? <CircularLoader /> : upcomingEventsCount}
+                {loading ? <CircularLoader /> : card.value}
               </div>
-              <div style={styles.statLabel}>ימי אפייה בחודש הקרוב</div>
+              <div style={styles.statLabel}>{card.title}</div>
             </div>
-
-            <div style={styles.statCard}>
-              <div style={styles.statIconWrapper}>
-                <BookOpen style={styles.statIcon} />
-              </div>
-              <div style={styles.statNumber}>
-                {loading ? <CircularLoader /> : recipesCount}
-              </div>
-              <div style={styles.statLabel}>כמות מתכונים</div>
-            </div>
-
-            <div style={styles.statCard}>
-              <div style={styles.statIconWrapper}>
-                <Package style={styles.statIcon} />
-              </div>
-              <div style={styles.statNumber}>
-                {loading ? <CircularLoader /> : lowStockCount}
-              </div>
-              <div style={styles.statLabel}>מוצרים במלאי נמוך</div>
-            </div>
-          </div>
+          ))}
         </div>
-      </main>
+      </div>
     </div>
   );
 };

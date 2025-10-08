@@ -38,13 +38,15 @@ function App() {
             recipe:recipe_id(
               id,
               doughweight,
+              type,
               recipe_ingredients(
                 id,
                 bakerspercent,
                 ingredient:ingredient_id(
                   id,
                   unit,
-                  qty
+                  qty,
+                  type
                 )
               )
             )
@@ -67,35 +69,46 @@ function App() {
       // 2. Accumulate all inventory updates across all events
       const inventoryUpdatesMap = {}; // { ingredient_id: totalQtyToDeduct }
 
-      events.forEach(event => {
-        event.event_recipes.forEach(er => {
+      for (const event of events) {
+        for (const er of event.event_recipes) {
           const recipe = er.recipe;
-          if (!recipe) return;
+          if (!recipe) continue;
 
           const ingredients = recipe.recipe_ingredients || [];
           const totalPercent = ingredients.reduce((sum, ri) => sum + ri.bakerspercent, 0);
           const scaleFactor = recipe.doughweight / (totalPercent / 100);
 
-          ingredients.forEach(ri => {
-            if (ri.ingredient.qty !== -1000) { // unlimited ingredients
-              const weightInGrams = (ri.bakerspercent / 100) * scaleFactor;
-              const totalWeightInGrams = weightInGrams * er.qty;
+          for (const ri of ingredients) {
+            const ingredient = ri.ingredient;
+            if (ingredient.qty === -1000) continue; // skip unlimited
 
-              const ingredient = ri.ingredient;
-              let totalWeight = totalWeightInGrams;
+            let totalWeightInGrams = (ri.bakerspercent / 100) * scaleFactor * er.qty;
 
-              // Convert to inventory unit
-              if (ingredient.unit === 'קג') {
-                totalWeight = totalWeightInGrams / 1000; // convert grams to kg
+            // Convert to inventory unit
+            if (ingredient.unit === 'קג') totalWeightInGrams /= 1000;
+
+            // If ingredient is derived, fetch its recipe and update base ingredients
+            if (ingredient.type === 'derived') {
+              const { data: derivedRecipe } = await supabase
+                .from('inventory_recipe')
+                .select('*')
+                .eq('user_id', session.user.id)
+                .eq('derived_id', ingredient.id);
+
+              if (derivedRecipe && derivedRecipe.length > 0) {
+                for (const dr of derivedRecipe) {
+                  const baseWeight = (dr.ratio / 100) * totalWeightInGrams;
+                  inventoryUpdatesMap[dr.ingredient_id] = (inventoryUpdatesMap[dr.ingredient_id] || 0) + baseWeight;
+                }
+                continue; // skip adding derived itself to inventoryUpdatesMap
               }
-
-              const ingredientId = ingredient.id;
-              inventoryUpdatesMap[ingredientId] = (inventoryUpdatesMap[ingredientId] || 0) + totalWeight;
             }
-          });
 
-        });
-      });
+            // Normal ingredient
+            inventoryUpdatesMap[ingredient.id] = (inventoryUpdatesMap[ingredient.id] || 0) + totalWeightInGrams;
+          }
+        }
+      }
 
       // 3. Convert inventory updates to array for RPC
       const inventoryUpdatesArray = Object.entries(inventoryUpdatesMap).map(([id, qtyToDeduct]) => ({
