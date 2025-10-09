@@ -42,7 +42,8 @@ const RecipeCard = ({ recipe, idx, selectedRecipe, setSelectedRecipe }) => {
       borderRadius: '50%',
       backgroundColor: recipe.active ? '#22c55e' : '#ef4444',
       border: '2px solid #fff',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+      boxShadow: `0 1px 3px rgba(0,0,0,0.2), 0 0 ${isMobile ? '8px' : '10px'} ${recipe.active ? 'rgba(34, 197, 94, 0.4)' : 'rgba(239, 68, 68, 0.4)'}`,
+      animation: 'shine 2s ease-in-out infinite',
     },
     title: {
       fontSize: isMobile ? '1rem' : isTablet ? '1.1rem' : '1.2rem',
@@ -79,19 +80,31 @@ const RecipeCard = ({ recipe, idx, selectedRecipe, setSelectedRecipe }) => {
   };
 
   return (
-    <div
-      key={idx}
-      style={styles.card}
-      onClick={() => setSelectedRecipe(recipe.id)}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
-      <div style={styles.statusCircle} />
-      <h3 style={styles.title}>{recipe.name}</h3>
-      <p style={styles.info}>מחיר: ₪{recipe.sellingprice || 'לא הוגדר'}</p>
-      <p style={styles.info}>משקל בצק: {recipe.doughweight} גרם</p>
-      <p style={styles.info}>מרכיבים: {recipe.recipe_ingredients?.length || 0}</p>
-    </div>
+    <>
+      <style>{`
+        @keyframes shine {
+          0%, 100% {
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2), 0 0 ${isMobile ? '8px' : '10px'} ${recipe.active ? 'rgba(34, 197, 94, 0.4)' : 'rgba(239, 68, 68, 0.4)'};
+          }
+          50% {
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2), 0 0 ${isMobile ? '16px' : '20px'} ${recipe.active ? 'rgba(34, 197, 94, 0.8)' : 'rgba(239, 68, 68, 0.8)'};
+          }
+        }
+      `}</style>
+      <div
+        key={idx}
+        style={styles.card}
+        onClick={() => setSelectedRecipe(recipe.id)}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
+        <div style={styles.statusCircle} />
+        <h3 style={styles.title}>{recipe.name}</h3>
+        <p style={styles.info}>מחיר: ₪{recipe.sellingprice || 'לא הוגדר'}</p>
+        <p style={styles.info}>משקל בצק: {recipe.doughweight} גרם</p>
+        <p style={styles.info}>מרכיבים: {recipe.recipe_ingredients?.length || 0}</p>
+      </div>
+    </>
   );
 }
 
