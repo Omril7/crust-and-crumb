@@ -81,7 +81,7 @@ export default function RecipesManager({ user }) {
 
     // find inventory row
     const inv = inventory.find(i => i.ingredient === newIngredient.ingredient);
-    if (!inv) return alert("Ingredient not found in inventory");
+    if (!inv) return;
 
     const { data, error } = await supabase
       .from('recipe_ingredients')

@@ -7,9 +7,11 @@ import Container from '../components/Container';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAlert } from '../contexts/AlertContext';
 
 export default function Login({ onLogin }) {
   const { theme } = useTheme();
+  const { alert } = useAlert();
   const { isMobile, isTablet } = useScreenSize();
   const navigate = useNavigate();
 
@@ -36,6 +38,7 @@ export default function Login({ onLogin }) {
     } else {
       onLogin(data.session);
       setIsLoading(false);
+      await alert("הופה! האופה חזר 👨‍🍳")
       navigate("/");
     }
   };

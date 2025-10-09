@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight, X, Calendar, Croissant, Hash, PlusSquare, TreePalm, NotebookPen, Repeat } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Calendar, Croissant, Hash, PlusSquare, TreePalm, NotebookPen, Repeat, Bus, Home, Trophy, CalendarDays, ExternalLink } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useScreenSize } from '../hooks/useScreenSize';
 import Container from '../components/Container';
@@ -7,14 +7,34 @@ import Header from '../components/Header';
 import { Button, Input, Select } from '../components/components';
 import { supabase } from '../supabaseClient';
 import LinearLoader from '../components/LinearLoader';
+import { useAlert } from '../contexts/AlertContext';
+
+const TEAMS = {
+  "Maccabi Netanya": "מכבי נתניה",
+  "Ironi Tiberias": "עירוני טבריה",
+  "H. Jerusalem": "הפועל ירושלים",
+  "Bnei Sakhnin": "בני סכנין",
+  "H. Petah Tikva": "הפועל פתח תקווה",
+  "Hapoel Tel Aviv": "הפועל תל אביב",
+  "Kiryat Shmona": "עירוני קריית שמונה",
+  "M. Bnei Reineh": "מכבי בני ריינה",
+  "B. Jerusalem": "ביתר ירושלים",
+  "FC Ashdod": "מ.ס. אשדוד",
+  "Hapoel Haifa": "הפועל חיפה",
+  "H. Beer Sheva": "הפועל באר שבע",
+  "M. Tel Aviv": "מכבי תל אביב",
+  "Ligat ha'Al": "ליגת העל"
+};
 
 export default function BakePlanningManager({ user }) {
   const { theme } = useTheme();
   const { isMobile, isTablet } = useScreenSize();
+  const { alert } = useAlert();
 
   const [events, setEvents] = useState({}); // { "2025-09-07": [ { recipe: 'Cake', qty: 3 } ] }
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [games, setGames] = useState({});
 
   const [selectedDate, setSelectedDate] = useState(null);
   const [newEntry, setNewEntry] = useState({ recipe: '', qty: 1, repeatWeekly: false, repeatWeeks: 4 });
@@ -55,6 +75,54 @@ export default function BakePlanningManager({ user }) {
     };
 
     fetchRecipes();
+
+    const fetchGames = async () => {
+      try {
+        const res = await fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent("https://www.transfermarkt.com/ceapi/nextMatches/team/1064?limit=25"));
+        const data = await res.json();
+
+        // assuming your data is in variable `data`
+        const matchesByDate = {};
+
+        data.matches.forEach(m => {
+          const { match, competition } = m;
+          const teams = data.teams;
+
+          // convert timestamp -> YYYY-MM-DD
+          const date = new Date(match.time * 1000)
+            .toISOString()
+            .split('T')[0];
+
+          // detect if Maccabi Haifa is home or away
+          const isHome = match.home === 1064;
+          const opponentId = isHome ? match.away : match.home;
+          const opponent = teams[opponentId];
+
+          // build match object
+          matchesByDate[date] = {
+            time: new Date(match.time * 1000).toLocaleString("he-IL", {
+              weekday: "short",
+              day: "2-digit",
+              month: "2-digit",
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            opponent: opponent.name,
+            opponentImage: opponent.image1x,
+            competition: competition.label,
+            homeOrAway: isHome ? "בית" : "חוץ",
+            link: "https://www.transfermarkt.com" + match.link,
+          };
+        });
+
+        setGames(matchesByDate);
+      } catch (err) {
+        console.error("Failed to fetch games:", err);
+        setGames({});
+      };
+    };
+
+    fetchGames(year, month);
   }, []);
 
   // ================= Fetch Events + Recipes per Month =================
@@ -177,11 +245,11 @@ export default function BakePlanningManager({ user }) {
 
     // Calculate dates to add (including original date)
     const datesToAdd = [selectedDate];
-    
+
     if (newEntry.repeatWeekly) {
       const startDate = new Date(selectedDate);
       const maxWeeks = Math.min(newEntry.repeatWeeks, 52); // Max 1 year
-      
+
       for (let i = 1; i <= maxWeeks; i++) {
         const nextDate = new Date(startDate);
         nextDate.setDate(startDate.getDate() + (i * 7));
@@ -213,7 +281,7 @@ export default function BakePlanningManager({ user }) {
       const { error: erErr } = await supabase
         .from('event_recipes')
         .insert([{ event_id: eventId, recipe_id: selectedRecipe.id, qty: newEntry.qty }]);
-      
+
       if (erErr) console.error(erErr);
     }
 
@@ -426,9 +494,20 @@ export default function BakePlanningManager({ user }) {
       borderBottom: `5px solid ${theme.accent.info}`,
     },
     notesOnly: {
+      background: `linear-gradient(135deg, ${theme.accent.error}66, ${theme.accent.error}33)`,
+      border: `1px solid ${theme.accent.error}`,
+      borderBottom: `5px solid ${theme.accent.error}`,
+    },
+    hasGame: {
       background: `linear-gradient(135deg, ${theme.accent.success}66, ${theme.accent.success}33)`,
       border: `1px solid ${theme.accent.success}`,
       borderBottom: `5px solid ${theme.accent.success}`,
+      position: 'relative',
+    },
+    gameFeature: {
+      position: 'absolute',
+      top: isMobile ? '5px' : '7px',
+      left: isMobile ? '10px' : '5px',
     },
     dayToday: {
       border: `2px solid ${theme.colors.textLight}`,
@@ -541,6 +620,147 @@ export default function BakePlanningManager({ user }) {
     }
   };
 
+  const getGame = (game) => {
+    const logoStyle = {
+      width: 48,
+      height: 48,
+      borderRadius: "12px",
+      background: "white",
+      padding: 6,
+      boxShadow: "0 2px 6px rgba(0, 0, 0, 0.25)",
+    };
+
+    return (
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "linear-gradient(135deg, #006633, #00994d)",
+          color: "white",
+          borderRadius: 12,
+          padding: "14px 16px",
+          width: 260,
+          boxShadow: "0 4px 10px rgba(0,0,0,0.3)",
+          fontFamily: "'Assistant', sans-serif",
+        }}
+      >
+        {/* Top section - team logos */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            justifyContent: "center",
+            width: "100%",
+          }}
+        >
+          <div style={logoStyle}>
+            <img
+              src={
+                game.homeOrAway === "בית"
+                  ? "https://tmssl.akamaized.net//images/wappen/homepageWappen70x70/1064.png?lm=1684233681"
+                  : game.opponentImage
+              }
+              alt={game.homeOrAway === "בית" ? "מכבי חיפה" : game.opponent}
+              style={{ width: "100%", height: "100%", objectFit: "contain" }}
+            />
+          </div>
+
+          <div
+            style={{
+              fontWeight: "bold",
+              fontSize: 18,
+              textShadow: "0 1px 3px rgba(0,0,0,0.3)",
+            }}
+          >
+            VS
+          </div>
+
+          <div style={logoStyle}>
+            <img
+              src={
+                game.homeOrAway !== "בית"
+                  ? "https://tmssl.akamaized.net//images/wappen/homepageWappen70x70/1064.png?lm=1684233681"
+                  : game.opponentImage
+              }
+              alt={game.homeOrAway !== "בית" ? "מכבי חיפה" : game.opponent}
+              style={{ width: "100%", height: "100%", objectFit: "contain" }}
+            />
+          </div>
+        </div>
+
+        {/* Match details */}
+        <div
+          style={{
+            marginTop: 10,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+          }}
+        >
+          {game.homeOrAway === "בית" ? <Home size={18} /> : <Bus size={18} />}
+          <span style={{ fontSize: 15 }}>
+            {game.homeOrAway === "בית" ? "בבית" : "בחוץ"} נגד{" "}
+            {TEAMS[game.opponent] || game.opponent}
+          </span>
+        </div>
+
+        <div
+          style={{
+            marginTop: 6,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+          }}
+        >
+          <CalendarDays size={18} />
+          <span style={{ fontSize: 15 }}>{game.time}</span>
+        </div>
+
+        <div
+          style={{
+            marginTop: 6,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+          }}
+        >
+          <Trophy size={18} />
+          <span style={{ fontSize: 15 }}>
+            {TEAMS[game.competition] || game.competition}
+          </span>
+        </div>
+
+        {/* Link button */}
+        <button
+          onClick={() => window.open(game.link, "_blank")}
+          style={{
+            marginTop: 12,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            background: "white",
+            color: "#006633",
+            border: "none",
+            borderRadius: 8,
+            padding: "6px 12px",
+            fontWeight: 600,
+            cursor: "pointer",
+            transition: "all 0.2s ease",
+          }}
+          onMouseOver={(e) => (e.target.style.background = "#d9ffd9")}
+          onMouseOut={(e) => (e.target.style.background = "white")}
+        >
+          לצפייה במשחק
+          <ExternalLink size={16} />
+        </button>
+      </div>
+    );
+  };
+
+
   return (
     <Container>
       <Header
@@ -593,6 +813,7 @@ export default function BakePlanningManager({ user }) {
             const hasHoliday = eventsForDay.some(ev => ev.isHoliday);
             const hasBaking = eventsForDay.some(ev => !ev.isHoliday && ev.qty > 0);
             const hasNotes = eventsForDay.some(ev => !!ev.notes);
+            const hasGame = !!games[dayStr];
             const isHolidayOnly = hasHoliday && !hasBaking;
 
             return (
@@ -601,6 +822,7 @@ export default function BakePlanningManager({ user }) {
                 onClick={() => openModal(day)}
                 style={{
                   ...styles.dayCell,
+                  ...(hasGame ? styles.hasGame : {}),
                   ...(isToday ? styles.dayToday : {}),
                   ...(isHolidayOnly
                     ? styles.dayHolidayOnly
@@ -615,6 +837,14 @@ export default function BakePlanningManager({ user }) {
                 onMouseLeave={(e) => !isMobile && (e.currentTarget.style.transform = 'scale(1)')}
                 title={hasEvents ? `יש אירועים בתאריך זה` : 'אין אירועים'}
               >
+                {!isMobile && hasGame && (
+                  <div style={styles.gameFeature}>
+                    <img
+                      src="https://tmssl.akamaized.net//images/wappen/homepageWappen70x70/1064.png?lm=1684233681"
+                      style={{ width: 20, height: 20, cursor: "pointer" }}
+                      onClick={async () => await alert(getGame(games[dayStr]))}
+                    />
+                  </div>)}
                 <div style={styles.dayNumber(isToday)}>{day.getDate()}</div>
 
                 {/* Events list */}

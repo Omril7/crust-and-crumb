@@ -8,11 +8,13 @@ import Header from '../components/Header';
 import { Button, Input, Select, Table } from '../components/components';
 import { getTodayDate, uuidv4 } from '../utils/helper';
 import { useConfirm } from '../contexts/ConfirmContext';
+import { useAlert } from '../contexts/AlertContext';
 
 export default function OrdersManager() {
   const { theme } = useTheme();
   const { isMobile, isTablet, isDesktop } = useScreenSize();
   const { confirm } = useConfirm();
+  const { alert } = useAlert();
   const [recipes, setRecipes] = useIndexedDB("recipes", []);
   const [clients, setClients] = useIndexedDB("clients", []);
   const [orders, setOrders] = useIndexedDB("orders", []);
@@ -43,10 +45,10 @@ export default function OrdersManager() {
       0
     );
 
-  const addOrder = () => {
+  const addOrder = async () => {
     if (!newOrder.clientName) return;
     if (newOrder.items.length === 0) {
-      alert('אנא הוסף לפחות פריט אחד להזמנה');
+      await alert('אנא הוסף לפחות פריט אחד להזמנה');
       return;
     }
     const orderWithId = { ...newOrder, orderId: uuidv4() };
@@ -74,11 +76,11 @@ export default function OrdersManager() {
     return client ? client.pickup : '-';
   };
 
-  const addItemToOrder = () => {
+  const addItemToOrder = async () => {
     if (!newItem.item || !newItem.qty || isNaN(newItem.qty) || Number(newItem.qty) <= 0)
       return;
     if (!recipes.find(r => r.name === newItem.item)) {
-      alert('מתכון לא נמצא. אנא בחר מתכון קיים מהרשימה.');
+      await alert('מתכון לא נמצא. אנא בחר מתכון קיים מהרשימה.');
       return;
     }
     setNewOrder(prev => ({
