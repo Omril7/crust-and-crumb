@@ -9,6 +9,7 @@ import { Button, Input, Table } from '../components/components';
 import { useConfirm } from '../contexts/ConfirmContext';
 import { supabase } from '../supabaseClient';
 import LinearLoader from '../components/LinearLoader';
+import Modal from '../components/Modal';
 
 const INIT_NEW_INGREDIENT = {
   ingredient: '',
@@ -261,61 +262,6 @@ export default function RecipesManager({ user }) {
       maxHeight: isMobile ? '60vh' : 'none',
       overflowY: isMobile ? 'auto' : 'visible',
       paddingBottom: isMobile ? '20px' : '0',
-    },
-    modalBackdrop: {
-      position: 'fixed',
-      inset: 0,
-      background: 'rgba(0,0,0,0.6)',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: isMobile ? 'flex-start' : 'center',
-      zIndex: 1000,
-      animation: 'fadeIn 0.3s ease',
-      padding: isMobile ? '10px' : '20px',
-      overflowY: isMobile ? 'auto' : 'hidden',
-      paddingTop: isMobile ? '20px' : '20px',
-      paddingBottom: isMobile ? '20px' : '20px',
-    },
-    modal: {
-      background: '#fff',
-      borderRadius: theme.borderRadius?.navbar || '12px',
-      boxShadow: theme.shadows?.navbar || '0 4px 12px rgba(0,0,0,0.2)',
-      maxWidth: isMobile ? '100%' : isTablet ? '600px' : '700px',
-      width: '100%',
-      maxHeight: isMobile ? 'calc(100vh - 40px)' : '85%',
-      minHeight: isMobile ? 'auto' : 'auto',
-      overflowY: 'auto',
-      padding: isMobile ? '16px' : isTablet ? '18px 20px' : '20px 24px',
-      animation: 'slideUp 0.3s ease',
-      margin: isMobile ? '0' : 'auto',
-      position: 'relative',
-      WebkitOverflowScrolling: 'touch',
-    },
-    modalHeader: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: 15,
-      borderBottom: `2px solid ${theme.colors?.activeButtonBg || '#eee'}`,
-      paddingBottom: 10,
-      flexWrap: isMobile ? 'wrap' : 'nowrap',
-    },
-    modalTitle: {
-      margin: 0,
-      fontSize: isMobile ? '1.2rem' : '1.4rem',
-      wordBreak: 'break-word',
-      flex: isMobile ? '1 1 100%' : 'none',
-      marginBottom: isMobile ? '8px' : '0',
-    },
-    closeButton: {
-      background: 'transparent',
-      border: 'none',
-      fontSize: isMobile ? '1.3rem' : '1.5rem',
-      cursor: 'pointer',
-      color: '#999',
-      padding: isMobile ? '5px' : '0',
-      minWidth: isMobile ? '30px' : 'auto',
-      minHeight: isMobile ? '30px' : 'auto',
     }
   };
 
@@ -366,193 +312,181 @@ export default function RecipesManager({ user }) {
       </section>
 
       {selectedRecipe && (
-        <div style={styles.modalBackdrop} onClick={() => setSelectedRecipe(null)}>
-          <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
-            {/* Header */}
-            <div style={styles.modalHeader}>
-              <h2 style={styles.modalTitle}>{selectedRecipe.name}</h2>
-              <button
-                onClick={() => setSelectedRecipe(null)}
-                style={styles.closeButton}
-                title="סגור"
-              >
-                ×
-              </button>
-            </div>
-
-            <div style={{ ...styles.grid, marginBottom: "20px" }}>
-              <Input
-                label="משקל בצק (גרם)"
-                type="number"
-                value={selectedRecipe.doughweight || ""}
-                onChange={(e) =>
-                  setSelectedRecipe({ ...selectedRecipe, doughweight: e.target.value })
-                }
-                onBlur={() => updateRecipeField("doughweight", selectedRecipe.doughweight)}
-                min={1}
-                icon={<Weight size={isMobile ? 20 : 18} />}
-                style={{ width: "50%" }}
-              />
-
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-                padding: isMobile ? '10px' : '12px',
-                alignSelf: isMobile ? 'stretch' : 'flex-start',
-              }}>
-                <input
-                  type="checkbox"
-                  id="recipe-active"
-                  checked={selectedRecipe.active || false}
-                  onChange={(e) => {
-                    const newActive = e.target.checked;
-                    setSelectedRecipe({ ...selectedRecipe, active: newActive });
-                    updateRecipeField("active", newActive);
-                  }}
-                  style={{
-                    width: isMobile ? '20px' : '22px',
-                    height: isMobile ? '20px' : '22px',
-                    cursor: 'pointer',
-                    accentColor: theme.accent.primary || '#4caf50'
-                  }}
-                />
-                <label
-                  htmlFor="recipe-active"
-                  style={{
-                    fontSize: isMobile ? '0.95rem' : '1rem',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    userSelect: 'none'
-                  }}
-                >
-                  מתכון פעיל
-                </label>
-              </div>
-              <Input
-                label="מחיר מכירה"
-                type="number"
-                value={selectedRecipe.sellingprice || ""}
-                onChange={(e) =>
-                  setSelectedRecipe({ ...selectedRecipe, sellingprice: e.target.value })
-                }
-                onBlur={() => updateRecipeField("sellingprice", selectedRecipe.sellingprice)}
-                min={1}
-                icon={<span style={{ fontWeight: 'bold', fontSize: isMobile ? '1.1rem' : '1.3rem' }}>₪</span>}
-                style={{ width: "50%" }}
-              />
-              <Button
-                title={"מחק מתכון"}
-                onClick={removeRecipe}
-                isGood={false}
-              />
-            </div>
-
-            {/* Add Ingredient */}
-            <section style={{ ...styles.section, marginBottom: isMobile ? '16px' : '20px' }} aria-label="הוספת מרכיב">
-              <h4 style={styles.sectionHeader}>
-                <Plus size={isMobile ? 18 : 20} />
-                הוספת מרכיב
-              </h4>
-
-              <div style={styles.grid}>
-                <Input
-                  label="מרכיב"
-                  value={newIngredient.ingredient}
-                  onChange={(e) => setNewIngredient({ ...newIngredient, ingredient: e.target.value })}
-                  icon={<Croissant size={isMobile ? 20 : 18} />}
-                  style={{ width: '100%' }}
-                  list="ingredient-list"
-                  dataList={inventory.map(client => client.ingredient)}
-                />
-                <Input
-                  label="בייקר"
-                  type="number"
-                  value={newIngredient.bakerspercent}
-                  onChange={(e) => setNewIngredient({ ...newIngredient, bakerspercent: e.target.value })}
-                  icon={<Percent size={isMobile ? 20 : 18} />}
-                />
-                <Button
-                  title={isAddDisabled ? 'נא למלא את כל השדות הדרושים' : 'הוסף'}
-                  onClick={addIngredientToRecipe}
-                  disabled={isAddDisabled}
-                />
-              </div>
-            </section>
-
-            {/* Ingredients Table */}
-            <Table
-              title="טבלת רכיבים"
-              headers={[
-                { key: 'ingredient', label: 'מרכיב' },
-                {
-                  key: 'bakerspercent',
-                  label: 'אחוזי בייקר',
-                  render: (value, row, i) => (
-                    <div
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => startEditBakersPercent(row.id, row.bakerspercent)}
-                    >
-                      {editingBakersPercent?.id === row.id ? (
-                        <input
-                          type="number"
-                          value={editingBakersPercent.value}
-                          onChange={(e) =>
-                            setEditingBakersPercent({ id: row.id, value: e.target.value })
-                          }
-                          onBlur={saveEditBakersPercent}
-                          autoFocus
-                          style={{
-                            width: isMobile ? '50px' : '60px',
-                            fontSize: isMobile ? '14px' : '16px'
-                          }}
-                        />
-                      ) : (
-                        value
-                      )}
-                    </div>
-                  )
-                },
-                {
-                  key: 'weight',
-                  label: 'משקל (גרם)',
-                  render: (_, row) => {
-                    const totalPercent = selectedRecipe.recipe_ingredients.reduce((sum, ing) => sum + (Number(ing.bakerspercent) || 0), 0);
-                    return row.bakerspercent && totalPercent > 0
-                      ? ((Number(row.bakerspercent) / 100) *
-                        (selectedRecipe.doughweight / (totalPercent / 100))
-                      ).toFixed(0)
-                      : '';
-                  }
-                },
-                {
-                  key: 'remove',
-                  label: 'מחק',
-                  render: (_, row) => (
-                    <div
-                      style={{
-                        cursor: 'pointer',
-                        color: 'red',
-                        padding: isMobile ? '8px' : '4px',
-                        display: 'flex',
-                        justifyContent: 'center'
-                      }}
-                      onClick={() => removeIngredient(row.id)}
-                      role="button"
-                    >
-                      <Trash2 size={isMobile ? 18 : 20} />
-                    </div>
-                  )
-                }
-              ]}
-              data={selectedRecipe.recipe_ingredients.map(ingredient => ({
-                ...ingredient,
-                ingredient: ingredient.inventory?.ingredient || 'Unknown'
-              }))}
+        <Modal title={selectedRecipe.name} handleClose={() => setSelectedRecipe(null)}>
+          <div style={{ ...styles.grid, marginBottom: "20px" }}>
+            <Input
+              label="משקל בצק (גרם)"
+              type="number"
+              value={selectedRecipe.doughweight || ""}
+              onChange={(e) =>
+                setSelectedRecipe({ ...selectedRecipe, doughweight: e.target.value })
+              }
+              onBlur={() => updateRecipeField("doughweight", selectedRecipe.doughweight)}
+              min={1}
+              icon={<Weight size={isMobile ? 20 : 18} />}
+              style={{ width: "50%" }}
             />
 
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              padding: isMobile ? '10px' : '12px',
+              alignSelf: isMobile ? 'stretch' : 'flex-start',
+            }}>
+              <input
+                type="checkbox"
+                id="recipe-active"
+                checked={selectedRecipe.active || false}
+                onChange={(e) => {
+                  const newActive = e.target.checked;
+                  setSelectedRecipe({ ...selectedRecipe, active: newActive });
+                  updateRecipeField("active", newActive);
+                }}
+                style={{
+                  width: isMobile ? '20px' : '22px',
+                  height: isMobile ? '20px' : '22px',
+                  cursor: 'pointer',
+                  accentColor: theme.accent.primary || '#4caf50'
+                }}
+              />
+              <label
+                htmlFor="recipe-active"
+                style={{
+                  fontSize: isMobile ? '0.95rem' : '1rem',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  userSelect: 'none'
+                }}
+              >
+                מתכון פעיל
+              </label>
+            </div>
+            <Input
+              label="מחיר מכירה"
+              type="number"
+              value={selectedRecipe.sellingprice || ""}
+              onChange={(e) =>
+                setSelectedRecipe({ ...selectedRecipe, sellingprice: e.target.value })
+              }
+              onBlur={() => updateRecipeField("sellingprice", selectedRecipe.sellingprice)}
+              min={1}
+              icon={<span style={{ fontWeight: 'bold', fontSize: isMobile ? '1.1rem' : '1.3rem' }}>₪</span>}
+              style={{ width: "50%" }}
+            />
+            <Button
+              title={"מחק מתכון"}
+              onClick={removeRecipe}
+              isGood={false}
+            />
           </div>
-        </div>
+
+          {/* Add Ingredient */}
+          <section style={{ ...styles.section, marginBottom: isMobile ? '16px' : '20px' }} aria-label="הוספת מרכיב">
+            <h4 style={styles.sectionHeader}>
+              <Plus size={isMobile ? 18 : 20} />
+              הוספת מרכיב
+            </h4>
+
+            <div style={styles.grid}>
+              <Input
+                label="מרכיב"
+                value={newIngredient.ingredient}
+                onChange={(e) => setNewIngredient({ ...newIngredient, ingredient: e.target.value })}
+                icon={<Croissant size={isMobile ? 20 : 18} />}
+                style={{ width: '100%' }}
+                list="ingredient-list"
+                dataList={inventory.map(client => client.ingredient)}
+              />
+              <Input
+                label="בייקר"
+                type="number"
+                value={newIngredient.bakerspercent}
+                onChange={(e) => setNewIngredient({ ...newIngredient, bakerspercent: e.target.value })}
+                icon={<Percent size={isMobile ? 20 : 18} />}
+              />
+              <Button
+                title={isAddDisabled ? 'נא למלא את כל השדות הדרושים' : 'הוסף'}
+                onClick={addIngredientToRecipe}
+                disabled={isAddDisabled}
+              />
+            </div>
+          </section>
+
+          {/* Ingredients Table */}
+          <Table
+            title="טבלת רכיבים"
+            sortable={true}
+            headers={[
+              { key: 'ingredient', label: 'מרכיב' },
+              {
+                key: 'bakerspercent',
+                label: 'אחוזי בייקר',
+                render: (value, row, i) => (
+                  <div
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => startEditBakersPercent(row.id, row.bakerspercent)}
+                  >
+                    {editingBakersPercent?.id === row.id ? (
+                      <input
+                        type="number"
+                        value={editingBakersPercent.value}
+                        onChange={(e) =>
+                          setEditingBakersPercent({ id: row.id, value: e.target.value })
+                        }
+                        onBlur={saveEditBakersPercent}
+                        autoFocus
+                        style={{
+                          width: isMobile ? '50px' : '60px',
+                          fontSize: isMobile ? '14px' : '16px'
+                        }}
+                      />
+                    ) : (
+                      value
+                    )}
+                  </div>
+                )
+              },
+              {
+                key: 'weight',
+                label: 'משקל (גרם)',
+                sortable: false,
+                render: (_, row) => {
+                  const totalPercent = selectedRecipe.recipe_ingredients.reduce((sum, ing) => sum + (Number(ing.bakerspercent) || 0), 0);
+                  return row.bakerspercent && totalPercent > 0
+                    ? ((Number(row.bakerspercent) / 100) *
+                      (selectedRecipe.doughweight / (totalPercent / 100))
+                    ).toFixed(0)
+                    : '';
+                }
+              },
+              {
+                key: 'remove',
+                label: 'מחק',
+                sortable: false,
+                render: (_, row) => (
+                  <div
+                    style={{
+                      cursor: 'pointer',
+                      color: 'red',
+                      padding: isMobile ? '8px' : '4px',
+                      display: 'flex',
+                      justifyContent: 'center'
+                    }}
+                    onClick={() => removeIngredient(row.id)}
+                    role="button"
+                  >
+                    <Trash2 size={isMobile ? 18 : 20} />
+                  </div>
+                )
+              }
+            ]}
+            data={selectedRecipe.recipe_ingredients.map(ingredient => ({
+              ...ingredient,
+              ingredient: ingredient.inventory?.ingredient || 'Unknown'
+            }))}
+          />
+        </Modal>
       )}
     </Container>
   );

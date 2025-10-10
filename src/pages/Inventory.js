@@ -224,6 +224,10 @@ export default function Inventory({ user }) {
   };
 
   const sortedInventory = [...inventory].sort((a, b) => {
+    // Derived items always last
+    if (a.type === "derived" && b.type !== "derived") return 1;
+    if (b.type === "derived" && a.type !== "derived") return -1;
+
     // Unlimited items always last
     if (a.qty === -1000 && b.qty !== -1000) return 1;
     if (b.qty === -1000 && a.qty !== -1000) return -1;
@@ -234,7 +238,6 @@ export default function Inventory({ user }) {
     const bLow = parseFloat(b.qty || 0) < parseFloat(b.lowthreshold || 0);
     return aLow === bLow ? 0 : aLow ? -1 : 1;
   });
-
 
   const styles = {
     gridContainer: {
@@ -311,6 +314,7 @@ export default function Inventory({ user }) {
       {
         key: "alert",
         label: "",
+        sortable: false,
         render: (_, row) =>
           row.type === "derived" || parseFloat(row.qty || 0) >= parseFloat(row.lowthreshold || 0) ? null : <TriangleAlert size={isMobile ? 18 : 20} color="orange" />
       },
@@ -346,7 +350,6 @@ export default function Inventory({ user }) {
 
         )
       },
-      { key: "type", label: "סוג", render: (_, row) => row.type === "base" ? "בסיסי" : "נגזר" },
       {
         key: "lowthreshold",
         label: "מינימום",
@@ -414,6 +417,7 @@ export default function Inventory({ user }) {
     baseHeaders.push({
       key: "remove",
       label: "מחק",
+      sortable: false,
       render: (_, row) => (
         <div
           style={{
