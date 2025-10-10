@@ -1,16 +1,41 @@
 import React, { useEffect, useState } from 'react';
-import { Package, Trash2, Plus, Hash, Ruler, IceCreamBowl, TriangleAlert, ShieldMinus, Infinity, AlertCircle, Edit, Edit2 } from 'lucide-react';
+
+// Contexts
+import { supabase } from '../supabaseClient';
+import { useAlert } from '../contexts/AlertContext';
+import { useConfirm } from '../contexts/ConfirmContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useScreenSize } from '../hooks/useScreenSize';
-import Container from '../components/Container';
-import Header from '../components/Header';
-import { Button, Input, Select, SelectWithSearchBar, Table } from '../components/components';
-import { formatNumber, parseDate } from '../utils/helper';
-import { useConfirm } from '../contexts/ConfirmContext';
-import { supabase } from '../supabaseClient';
-import LinearLoader from '../components/LinearLoader';
+
+// Components
+import {
+  Button,
+  Container,
+  Header,
+  Input,
+  LinearLoader,
+  Select,
+  SelectWithSearchBar,
+  Table
+} from '../components/components';
 import InventoryAlert from '../components/InventoryAlert';
-import { useAlert } from '../contexts/AlertContext';
+
+// Icons
+import {
+  Edit2,
+  Hash,
+  IceCreamBowl,
+  Infinity,
+  Package,
+  Plus,
+  Ruler,
+  ShieldMinus,
+  Trash2,
+  TriangleAlert
+} from 'lucide-react';
+
+// Helpers
+import { formatNumber, parseDate } from '../utils/helper';
 
 const INIT_NEW_INGREDIENT = {
   ingredient: "",

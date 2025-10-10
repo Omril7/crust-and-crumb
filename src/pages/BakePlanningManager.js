@@ -1,13 +1,34 @@
 import React, { useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight, X, Calendar, Croissant, Hash, PlusSquare, TreePalm, NotebookPen, Repeat } from 'lucide-react';
+
+// Contexts
+import { supabase } from '../supabaseClient';
 import { useTheme } from '../contexts/ThemeContext';
 import { useScreenSize } from '../hooks/useScreenSize';
-import Container from '../components/Container';
-import Header from '../components/Header';
-import { Button, Input, Select } from '../components/components';
-import { supabase } from '../supabaseClient';
-import LinearLoader from '../components/LinearLoader';
-import Modal from '../components/Modal';
+
+// Components
+import {
+  Button,
+  Container,
+  Header,
+  Input,
+  LinearLoader,
+  Modal,
+  Select
+} from '../components/components';
+
+// Icons
+import {
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  Croissant,
+  Hash,
+  NotebookPen,
+  PlusSquare,
+  Repeat,
+  TreePalm,
+  X,
+} from 'lucide-react';
 
 export default function BakePlanningManager({ user }) {
   const { theme } = useTheme();

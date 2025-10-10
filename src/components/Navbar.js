@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
-import { useScreenSize } from '../hooks/useScreenSize'; // or useBreakpoints
+import { useScreenSize } from '../hooks/useScreenSize';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { useConfirm } from '../contexts/ConfirmContext';

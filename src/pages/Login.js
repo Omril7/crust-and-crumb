@@ -1,13 +1,25 @@
-// src/components/Login.js
 import React, { useState } from 'react';
-import { Input } from '../components/components';
-import { Lock, User, Eye, EyeOff } from 'lucide-react';
-import { useScreenSize } from '../hooks/useScreenSize';
-import Container from '../components/Container';
-import { useNavigate } from 'react-router-dom';
+
+// Contexts
 import { supabase } from '../supabaseClient';
-import { useTheme } from '../contexts/ThemeContext';
 import { useAlert } from '../contexts/AlertContext';
+import { useNavigate } from 'react-router-dom';
+import { useTheme } from '../contexts/ThemeContext';
+import { useScreenSize } from '../hooks/useScreenSize';
+
+// Components
+import {
+  Container,
+  Input
+} from '../components/components';
+
+// Icons
+import {
+  Eye,
+  EyeOff,
+  Lock,
+  User
+} from 'lucide-react';
 
 export default function Login({ onLogin }) {
   const { theme } = useTheme();

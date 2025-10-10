@@ -1,17 +1,21 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import './App.css';
+
+// Contexts
+import { supabase } from './supabaseClient';
+import { useSupabaseSession } from './hooks/useSupabaseSession';
+
+// Pages
 import BakePlanningManager from './pages/BakePlanningManager';
 import Home from './pages/Home';
 import Inventory from './pages/Inventory';
 import Login from './pages/Login';
 import RecipesManager from './pages/RecipesManager';
-// import ClientsManager from './pages/ClientsManager';
-// import OrdersManager from './pages/OrdersManager';
+
+// Components
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
-import { useSupabaseSession } from './hooks/useSupabaseSession';
-import { supabase } from './supabaseClient';
 
 function App() {
   const { session, setSession } = useSupabaseSession();

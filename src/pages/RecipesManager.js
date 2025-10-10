@@ -1,15 +1,32 @@
-import React, { useState, useEffect } from 'react';
-import Container from '../components/Container';
-import Header from '../components/Header';
-import { CookingPot, Croissant, Percent, Plus, Trash2, Weight } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+
+// Contexts
+import { supabase } from '../supabaseClient';
+import { useConfirm } from '../contexts/ConfirmContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useScreenSize } from '../hooks/useScreenSize';
+
+// Components
+import {
+  Button,
+  Container,
+  Header,
+  Input,
+  LinearLoader,
+  Modal,
+  Table
+} from '../components/components';
 import RecipeCard from '../components/RecipeCard';
-import { Button, Input, Table } from '../components/components';
-import { useConfirm } from '../contexts/ConfirmContext';
-import { supabase } from '../supabaseClient';
-import LinearLoader from '../components/LinearLoader';
-import Modal from '../components/Modal';
+
+// Icons
+import {
+  CookingPot,
+  Croissant,
+  Percent,
+  Plus,
+  Trash2,
+  Weight
+} from 'lucide-react';
 
 const INIT_NEW_INGREDIENT = {
   ingredient: '',

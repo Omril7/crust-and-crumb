@@ -1,9 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { CalendarDays, BookOpen, Package } from 'lucide-react';
-import { useTheme } from '../contexts/ThemeContext';
+
+// Contexts
 import { supabase } from '../supabaseClient';
-import CircularLoader from '../components/CircularLoader';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from '../contexts/ThemeContext';
+
+// Components
+import { CircularLoader } from '../components/components';
+
+// Icons
+import {
+  BookOpen,
+  CalendarDays,
+  Package
+} from 'lucide-react';
 
 const Home = ({ user }) => {
   const { theme } = useTheme();
