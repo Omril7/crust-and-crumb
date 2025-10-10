@@ -4,12 +4,10 @@ import { useTheme } from '../contexts/ThemeContext';
 import { supabase } from '../supabaseClient';
 import CircularLoader from '../components/CircularLoader';
 import { useNavigate } from 'react-router-dom';
-import { useAlert } from '../contexts/AlertContext';
 
 const Home = ({ user }) => {
   const { theme } = useTheme();
   const navigate = useNavigate();
-  const { alert } = useAlert();
 
   const [loading, setLoading] = useState(true);
   const [lowStockCount, setLowStockCount] = useState(0);
@@ -163,10 +161,7 @@ const Home = ({ user }) => {
     <div style={styles.container}>
       {/* Main Content */}
       <div style={styles.contentContainer}>
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }}>
-          <img src="https://tmssl.akamaized.net//images/wappen/homepageWappen70x70/1064.png?lm=1684233681" style={{ width: 64, height: 64, cursor: "pointer" }} onClick={async () => await alert("תזכור שמכבי יש רק בחיפה")} />
-          <h1 style={styles.pageTitle}>Crust & Crumb</h1>
-        </div>
+        <h1 style={styles.pageTitle}>Crust & Crumb</h1>
 
         <div style={styles.statsGrid}>
           {cards.map((card, index) => (
