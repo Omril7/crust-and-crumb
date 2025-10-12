@@ -79,7 +79,7 @@ export const Input = ({
       userSelect: 'none',
     },
     floatingLabelFloating: {
-      background: "linear-gradient(to bottom, transparent 50%, #fff 50%)",
+      background: "linear-gradient(to bottom, #f9f9f9 50%, #fff 50%)",
       top: '-0.6em',
       fontSize: isSmall ? '0.75rem' : '0.85rem',
       color: theme.textPrimary || '#333',
@@ -277,7 +277,7 @@ export const Select = ({
       userSelect: 'none',
     },
     floatingLabelFloating: {
-      background: 'linear-gradient(to bottom, transparent 50%, #fff 50%)',
+      background: 'linear-gradient(to bottom, #f9f9f9 50%, #fff 50%)',
       top: '-0.6em',
       fontSize: '0.85rem',
       color: theme.textPrimary || '#333',
@@ -412,7 +412,7 @@ export const SelectWithSearchBar = ({
       userSelect: 'none',
     },
     floatingLabelFloating: {
-      background: 'linear-gradient(to bottom, transparent 50%, #fff 50%)',
+      background: 'linear-gradient(to bottom, #f9f9f9 50%, #fff 50%)',
       top: '-0.6em',
       fontSize: '0.85rem',
       color: theme.textPrimary || '#333',
