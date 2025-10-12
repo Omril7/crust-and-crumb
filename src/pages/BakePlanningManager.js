@@ -13,7 +13,8 @@ import {
   Input,
   LinearLoader,
   Modal,
-  Select
+  Select,
+  Table
 } from '../components/components';
 
 // Icons
@@ -29,6 +30,7 @@ import {
   TreePalm,
   X,
 } from 'lucide-react';
+import RecipeDetails from '../components/RecipeDetails';
 
 export default function BakePlanningManager({ user }) {
   const { theme } = useTheme();
@@ -37,6 +39,7 @@ export default function BakePlanningManager({ user }) {
   const [events, setEvents] = useState({}); // { "2025-09-07": [ { recipe: 'Cake', qty: 3 } ] }
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [openRecipe, setOpenRecipe] = useState(null); // { recipeId: 1, qty: 15 }
 
   const [selectedDate, setSelectedDate] = useState(null);
   const [newEntry, setNewEntry] = useState({ recipe: '', qty: 1, repeatWeekly: false, repeatWeeks: 4 });
@@ -372,6 +375,10 @@ export default function BakePlanningManager({ user }) {
     }
   };
 
+  const handleOpenRecipeDetails = (event) => {
+    setOpenRecipe({ recipeId: event.recipeId, qty: event.qty })
+  }
+
   const sortEvents = (arr) =>
     [...arr].sort((a, b) => {
       if (a.isHoliday && !b.isHoliday) return -1;
@@ -544,223 +551,254 @@ export default function BakePlanningManager({ user }) {
   };
 
   return (
-    <Container>
-      <Header
-        title={"תכנון אפייה"}
-        icon={<Calendar size={isMobile ? 28 : 32} />}
-      />
+    <>
+      <Container>
+        <Header
+          title={"תכנון אפייה"}
+          icon={<Calendar size={isMobile ? 28 : 32} />}
+        />
 
-      {/* Month Navigation */}
-      <div style={styles.monthNav}>
-        <button
-          style={styles.navBtn}
-          onClick={prevMonth}
-          aria-label="חודש הקודם"
-          title="חודש הקודם"
-        >
-          <ChevronRight size={isMobile ? 20 : 18} />
-        </button>
+        {/* Month Navigation */}
+        <div style={styles.monthNav}>
+          <button
+            style={styles.navBtn}
+            onClick={prevMonth}
+            aria-label="חודש הקודם"
+            title="חודש הקודם"
+          >
+            <ChevronRight size={isMobile ? 20 : 18} />
+          </button>
 
-        <h3 style={styles.monthLabel}>
-          {new Date(year, month).toLocaleString('he-IL', {
-            month: 'long',
-            year: 'numeric'
-          })}
-        </h3>
+          <h3 style={styles.monthLabel}>
+            {new Date(year, month).toLocaleString('he-IL', {
+              month: 'long',
+              year: 'numeric'
+            })}
+          </h3>
 
-        <button
-          style={styles.navBtn}
-          onClick={nextMonth}
-          aria-label="חודש הבא"
-          title="חודש הבא"
-        >
-          <ChevronLeft size={isMobile ? 20 : 18} />
-        </button>
-      </div>
-
-      {/* Weekdays */}
-      <div style={styles.weekdays}>
-        {['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'].map(day => <div key={day}>{day}</div>)}
-      </div>
-
-      {loading ? <LinearLoader /> : (
-        <div style={styles.daysGrid}>
-          {Array(days[0].getDay()).fill(null).map((_, i) => <div key={'empty-' + i} />)}
-          {days.map(day => {
-            const dayStr = formatDate(day);
-            const eventsForDay = events[dayStr] || [];
-            const hasEvents = eventsForDay.filter(ev => !ev.isHoliday && ev.qty > 0).length > 0;
-            const isToday = dayStr === formatDate(today);
-
-            const hasHoliday = eventsForDay.some(ev => ev.isHoliday);
-            const hasBaking = eventsForDay.some(ev => !ev.isHoliday && ev.qty > 0);
-            const hasNotes = eventsForDay.some(ev => !!ev.notes);
-            const isHolidayOnly = hasHoliday && !hasBaking;
-
-            return (
-              <div
-                key={dayStr}
-                onClick={() => openModal(day)}
-                style={{
-                  ...styles.dayCell,
-                  ...(isToday ? styles.dayToday : {}),
-                  ...(isHolidayOnly
-                    ? styles.dayHolidayOnly
-                    : hasEvents
-                      ? styles.dayHasEvents
-                      : hasNotes
-                        ? styles.notesOnly
-                        : {}
-                  )
-                }}
-                onMouseEnter={(e) => !isMobile && (e.currentTarget.style.transform = 'scale(1.03)')}
-                onMouseLeave={(e) => !isMobile && (e.currentTarget.style.transform = 'scale(1)')}
-                title={hasEvents ? `יש אירועים בתאריך זה` : 'אין אירועים'}
-              >
-                <div style={styles.dayNumber(isToday)}>{day.getDate()}</div>
-
-                {/* Events list */}
-                {(hasEvents || hasNotes) && !isMobile && (
-                  <ul style={{
-                    listStyle: 'none',
-                    padding: 0,
-                    margin: '4px 0 0 0',
-                    fontSize: isMobile ? '0.7rem' : '0.75rem',
-                    textAlign: 'center',
-                    width: '100%'
-                  }}>
-                    {hasEvents && eventsForDay.map((ev, idx) => (
-                      <li
-                        key={idx}
-                        style={{
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          lineHeight: isMobile ? '1.2' : '1.3'
-                        }}
-                      >
-                        {!ev.isHoliday && `${ev.recipe}${ev.qty ? ` (${ev.qty})` : ''}`}
-                      </li>
-                    ))}
-                    {hasNotes && (
-                      <li style={{ display: "flex", gap: 5, justifyContent: "center", alignItems: "center" }}>
-                        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', lineHeight: isMobile ? '1.2' : '1.3' }}>צפה בהערה</span>
-                        <NotebookPen size={isMobile ? 16 : 14} />
-                      </li>
-                    )}
-                  </ul>
-                )}
-              </div>
-            );
-          })}
-
+          <button
+            style={styles.navBtn}
+            onClick={nextMonth}
+            aria-label="חודש הבא"
+            title="חודש הבא"
+          >
+            <ChevronLeft size={isMobile ? 20 : 18} />
+          </button>
         </div>
-      )}
 
-      {/* Modal */}
-      {selectedDate && (
-        <Modal title={selectedDate} handleClose={closeModal} modalStyles={styles.modal}>
-          <Select
-            label="בחר מתכון"
-            value={newEntry.recipe}
-            onChange={e => setNewEntry({ ...newEntry, recipe: e.target.value })}
-            options={recipes.map(recipe => recipe.name)}
-            icon={<Croissant size={isMobile ? 20 : 18} />}
-            style={{
-              width: isMobile ? '100%' : '70%',
-              fontSize: isMobile ? '16px' : '14px',
-              marginBottom: 15
-            }}
-          />
+        {/* Weekdays */}
+        <div style={styles.weekdays}>
+          {['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'].map(day => <div key={day}>{day}</div>)}
+        </div>
 
-          <Input
-            label="כמות"
-            type="number"
-            min={1}
-            value={newEntry.qty}
-            onChange={e => setNewEntry({ ...newEntry, qty: Number(e.target.value) })}
-            icon={<Hash size={isMobile ? 20 : 18} />}
-            style={{
-              fontSize: isMobile ? '16px' : '14px',
-              marginBottom: 15,
-              width: isMobile ? '100%' : '40%',
-            }}
-          />
+        {loading ? <LinearLoader /> : (
+          <div style={styles.daysGrid}>
+            {Array(days[0].getDay()).fill(null).map((_, i) => <div key={'empty-' + i} />)}
+            {days.map(day => {
+              const dayStr = formatDate(day);
+              const eventsForDay = events[dayStr] || [];
+              const hasEvents = eventsForDay.filter(ev => !ev.isHoliday && ev.qty > 0).length > 0;
+              const isToday = dayStr === formatDate(today);
 
-          {/* Weekly Repeat Option */}
-          <div style={styles.checkboxContainer}>
-            <input
-              type="checkbox"
-              id="repeatWeekly"
-              checked={newEntry.repeatWeekly}
-              onChange={e => setNewEntry({ ...newEntry, repeatWeekly: e.target.checked })}
-              style={styles.checkbox}
-            />
-            <label htmlFor="repeatWeekly" style={styles.checkboxLabel}>
-              <Repeat size={isMobile ? 18 : 16} />
-              חזור כל שבוע
-            </label>
+              const hasHoliday = eventsForDay.some(ev => ev.isHoliday);
+              const hasBaking = eventsForDay.some(ev => !ev.isHoliday && ev.qty > 0);
+              const hasNotes = eventsForDay.some(ev => !!ev.notes);
+              const isHolidayOnly = hasHoliday && !hasBaking;
+
+              return (
+                <div
+                  key={dayStr}
+                  onClick={() => openModal(day)}
+                  style={{
+                    ...styles.dayCell,
+                    ...(isToday ? styles.dayToday : {}),
+                    ...(isHolidayOnly
+                      ? styles.dayHolidayOnly
+                      : hasEvents
+                        ? styles.dayHasEvents
+                        : hasNotes
+                          ? styles.notesOnly
+                          : {}
+                    )
+                  }}
+                  onMouseEnter={(e) => !isMobile && (e.currentTarget.style.transform = 'scale(1.03)')}
+                  onMouseLeave={(e) => !isMobile && (e.currentTarget.style.transform = 'scale(1)')}
+                  title={hasEvents ? `יש אירועים בתאריך זה` : 'אין אירועים'}
+                >
+                  <div style={styles.dayNumber(isToday)}>{day.getDate()}</div>
+
+                  {/* Events list */}
+                  {(hasEvents || hasNotes) && !isMobile && (
+                    <ul style={{
+                      listStyle: 'none',
+                      padding: 0,
+                      margin: '4px 0 0 0',
+                      fontSize: isMobile ? '0.7rem' : '0.75rem',
+                      textAlign: 'center',
+                      width: '100%'
+                    }}>
+                      {hasEvents && eventsForDay.map((ev, idx) => (
+                        <li
+                          key={idx}
+                          style={{
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            lineHeight: isMobile ? '1.2' : '1.3'
+                          }}
+                        >
+                          {!ev.isHoliday && `${ev.recipe}${ev.qty ? ` (${ev.qty})` : ''}`}
+                        </li>
+                      ))}
+                      {hasNotes && (
+                        <li style={{ display: "flex", gap: 5, justifyContent: "center", alignItems: "center" }}>
+                          <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', lineHeight: isMobile ? '1.2' : '1.3' }}>צפה בהערה</span>
+                          <NotebookPen size={isMobile ? 16 : 14} />
+                        </li>
+                      )}
+                    </ul>
+                  )}
+                </div>
+              );
+            })}
+
           </div>
+        )}
 
-          {/* Number of Weeks to Repeat */}
-          {newEntry.repeatWeekly && (
-            <Input
-              label="מספר שבועות (מקסימום 52)"
-              type="number"
-              min={1}
-              max={52}
-              value={newEntry.repeatWeeks}
-              onChange={e => setNewEntry({ ...newEntry, repeatWeeks: Math.min(52, Math.max(1, Number(e.target.value))) })}
-              icon={<Repeat size={isMobile ? 20 : 18} />}
+        {/* Modal */}
+        {selectedDate && (
+          <Modal title={selectedDate} handleClose={closeModal} >
+            <Select
+              label="בחר מתכון"
+              value={newEntry.recipe}
+              onChange={e => setNewEntry({ ...newEntry, recipe: e.target.value })}
+              options={recipes.map(recipe => recipe.name)}
+              icon={<Croissant size={isMobile ? 20 : 18} />}
               style={{
+                width: isMobile ? '100%' : '70%',
                 fontSize: isMobile ? '16px' : '14px',
                 marginBottom: 15
               }}
             />
-          )}
 
-          <Button
-            title="הוסף"
-            onClick={addEvent}
-            icon={<PlusSquare size={isMobile ? 20 : 18} color={theme.buttonText || '#fff'} />}
-            disabled={!newEntry.recipe || newEntry.qty <= 0}
-          />
+            <Input
+              label="כמות"
+              type="number"
+              min={1}
+              value={newEntry.qty}
+              onChange={e => setNewEntry({ ...newEntry, qty: Number(e.target.value) })}
+              icon={<Hash size={isMobile ? 20 : 18} />}
+              style={{
+                fontSize: isMobile ? '16px' : '14px',
+                marginBottom: 15,
+                width: isMobile ? '100%' : '40%',
+              }}
+            />
 
-          <Input
-            label="הערות"
-            value={notes}
-            onChange={e => setNotes(e.target.value)}
-            onBlur={saveNotes}
-            icon={<NotebookPen size={isMobile ? 20 : 18} />}
-            rows={2}
-            style={{
-              width: '100%',
-              fontSize: isMobile ? '16px' : '14px',
-              marginTop: 15,
-              marginBottom: 15
-            }}
-          />
+            {/* Weekly Repeat Option */}
+            <div style={styles.checkboxContainer}>
+              <input
+                type="checkbox"
+                id="repeatWeekly"
+                checked={newEntry.repeatWeekly}
+                onChange={e => setNewEntry({ ...newEntry, repeatWeekly: e.target.checked })}
+                style={styles.checkbox}
+              />
+              <label htmlFor="repeatWeekly" style={styles.checkboxLabel}>
+                <Repeat size={isMobile ? 18 : 16} />
+                חזור כל שבוע
+              </label>
+            </div>
 
-          <h4 style={{
-            marginTop: 20,
-            marginBottom: 10,
-            color: theme.textPrimary,
-          }}>
-            אירועים לתאריך זה
-          </h4>
+            {/* Number of Weeks to Repeat */}
+            {newEntry.repeatWeekly && (
+              <Input
+                label="מספר שבועות (מקסימום 52)"
+                type="number"
+                min={1}
+                max={52}
+                value={newEntry.repeatWeeks}
+                onChange={e => setNewEntry({ ...newEntry, repeatWeeks: Math.min(52, Math.max(1, Number(e.target.value))) })}
+                icon={<Repeat size={isMobile ? 20 : 18} />}
+                style={{
+                  fontSize: isMobile ? '16px' : '14px',
+                  marginBottom: 15
+                }}
+              />
+            )}
 
-          {events[selectedDate]?.length > 0 ? (
-            <ul style={styles.eventList}>
-              {sortEvents(events[selectedDate]).map((ev, idx) => (
-                <li key={idx} style={styles.eventItem}>
-                  {ev.isHoliday ? (
-                    <span style={{ ...styles.eventText, color: theme.accent.info, fontWeight: "bold" }}>
-                      <TreePalm /> {ev.recipe}
-                    </span>
-                  ) : (
-                    <>
-                      {ev.recipe && (
-                        <>
+            <Button
+              title="הוסף"
+              onClick={addEvent}
+              icon={<PlusSquare size={isMobile ? 20 : 18} color={theme.buttonText || '#fff'} />}
+              disabled={!newEntry.recipe || newEntry.qty <= 0}
+            />
+
+            <Input
+              label="הערות"
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              onBlur={saveNotes}
+              icon={<NotebookPen size={isMobile ? 20 : 18} />}
+              rows={2}
+              style={{
+                width: '100%',
+                fontSize: isMobile ? '16px' : '14px',
+                marginTop: 15,
+                marginBottom: 15
+              }}
+            />
+
+            <h4 style={{
+              marginTop: 20,
+              marginBottom: 10,
+              color: theme.textPrimary,
+            }}>
+              אירועים לתאריך זה
+            </h4>
+
+            {events[selectedDate]?.length > 0 ? (
+              <>
+                {/* Holidays section */}
+                {events[selectedDate].some(ev => ev.isHoliday) && (
+                  <ul style={styles.eventList}>
+                    {events[selectedDate]
+                      .filter(ev => ev.isHoliday)
+                      .map((ev, idx) => (
+                        <li key={idx} style={styles.eventItem}>
+                          <span style={{ ...styles.eventText, color: theme.accent.info, fontWeight: "bold" }}>
+                            <TreePalm /> {ev.recipe}
+                          </span>
+                        </li>
+                      ))}
+                  </ul>
+                )}
+                {events[selectedDate].some(ev => !ev.isHoliday && ev.recipe) && (
+                  <Table
+                    title="אירועים מתוכננים"
+                    sortable={true}
+                    headers={[
+                      {
+                        key: 'details',
+                        label: 'פרטים',
+                        sortable: false,
+                        render: (_, ev) => (
+                          <button
+                            style={{ ...styles.removeBtn, color: 'blue' }}
+                            onClick={() => handleOpenRecipeDetails(ev)}
+                            title="לחץ כדי לראות כמויות"
+                          >
+                            לחץ כאן
+                          </button>
+                        )
+                      },
+                      { key: 'recipe', label: 'מתכון' },
+                      { key: 'qty', label: 'כמות' },
+                      {
+                        key: 'delete',
+                        label: 'מחק',
+                        sortable: false,
+                        render: (_, ev) => (
                           <button
                             style={styles.removeBtn}
                             onClick={() => removeEvent(ev.id)}
@@ -768,29 +806,26 @@ export default function BakePlanningManager({ user }) {
                           >
                             <X size={isMobile ? 18 : 16} />
                           </button>
-                          <span style={styles.eventText}>
-                            {ev.recipe} - כמות: {ev.qty}
-                          </span>
-                        </>
-                      )}
-                    </>
-                  )}
-                </li>
-              ))}
-            </ul>
+                        )
+                      },
+                    ]}
+                    data={sortEvents(events[selectedDate]).filter(ev => !ev.isHoliday && ev.recipe)}
+                  />
+                )}
+              </>
+            ) : (
+              <p style={styles.noEvents}>אין אירועים לתאריך זה</p>
+            )}
 
-          ) : (
-            <p style={styles.noEvents}>אין אירועים לתאריך זה</p>
-          )}
+          </Modal>
+        )}
+      </Container>
 
-          <Button
-            title="סגור"
-            onClick={closeModal}
-            isGood={false}
-          />
-
-        </Modal>
-      )}
-    </Container>
+      <RecipeDetails
+        user={user}
+        recipe={openRecipe}
+        onClose={() => setOpenRecipe(null)}
+      />
+    </>
   );
 }

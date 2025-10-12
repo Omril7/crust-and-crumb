@@ -14,8 +14,8 @@ export const parseDate = (dateString) => {
   return `${hours}:${minutes}:${seconds} ${day}-${month}-${year}`;
 };
 
-export const formatNumber = (num) => {
+export const formatNumber = (num, fixed = 2) => {
   return num
-    ? Number(num).toLocaleString('he-IL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-    : '0.00';
+    ? Number(num).toLocaleString('he-IL', { minimumFractionDigits: fixed, maximumFractionDigits: fixed })
+    : Number('0').toLocaleString('he-IL', { minimumFractionDigits: fixed, maximumFractionDigits: fixed });
 };

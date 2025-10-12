@@ -17,6 +17,7 @@ export const Input = ({
   list = null,
   dataList = null,
   rows, // <-- new prop
+  isSmall = false
 }) => {
   const { theme } = useTheme();
   const [isFocused, setIsFocused] = useState(false);
@@ -36,7 +37,7 @@ export const Input = ({
       backgroundColor: theme.inputBackground || '#fff',
       border: `1.5px solid ${theme.borderColor || '#ccc'}`,
       borderRadius: 8,
-      padding: rows ? '8px 12px' : '8px 12px 8px 0px',
+      padding: rows ? '8px 12px' : isSmall ? '2px 2px 2px 0px' : '8px 12px 8px 0px',
       fontSize: '1rem',
       color: theme.textPrimary || '#333',
       transition: 'border-color 0.3s',
@@ -46,7 +47,7 @@ export const Input = ({
       width: '100%',
       border: 'none',
       outline: 'none',
-      fontSize: '1rem',
+      fontSize: isSmall ? "0.75rem" : '1rem',
       backgroundColor: 'transparent',
       color: theme.textPrimary || '#333',
       fontFamily: theme.fontFamily || 'Arial, sans-serif',
@@ -73,14 +74,14 @@ export const Input = ({
       fontWeight: 500,
       color: theme.textPrimary || '#333',
       pointerEvents: 'none',
-      right: 12,
+      right: isSmall ? 6 : 12,
       transition: 'all 0.2s ease',
       userSelect: 'none',
     },
     floatingLabelFloating: {
-      background: "linear-gradient(to bottom, #f9f9f9 50%, #fff 50%)",
+      background: "linear-gradient(to bottom, transparent 50%, #fff 50%)",
       top: '-0.6em',
-      fontSize: '0.85rem',
+      fontSize: isSmall ? '0.75rem' : '0.85rem',
       color: theme.textPrimary || '#333',
     },
     floatingLabelInside: {
@@ -276,7 +277,7 @@ export const Select = ({
       userSelect: 'none',
     },
     floatingLabelFloating: {
-      background: 'linear-gradient(to bottom, #f9f9f9 50%, #fff 50%)',
+      background: 'linear-gradient(to bottom, transparent 50%, #fff 50%)',
       top: '-0.6em',
       fontSize: '0.85rem',
       color: theme.textPrimary || '#333',
@@ -411,7 +412,7 @@ export const SelectWithSearchBar = ({
       userSelect: 'none',
     },
     floatingLabelFloating: {
-      background: 'linear-gradient(to bottom, #f9f9f9 50%, #fff 50%)',
+      background: 'linear-gradient(to bottom, transparent 50%, #fff 50%)',
       top: '-0.6em',
       fontSize: '0.85rem',
       color: theme.textPrimary || '#333',
