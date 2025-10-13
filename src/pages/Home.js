@@ -400,7 +400,7 @@ const Home = ({ user }) => {
           </div>
         ) : (
           <div style={styles.accordionContainer}>
-            <div style={styles.accordionHeader}>
+            <div style={{ ...styles.accordionHeader, justifyContent: "center" }}>
               <span>אין אפייה מחר</span>
             </div>
           </div>
