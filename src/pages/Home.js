@@ -292,7 +292,7 @@ const Home = ({ user }) => {
         <h1 style={styles.pageTitle}>Crust & Crumb</h1>
 
         {/* Tomorrow's Baking Accordion */}
-        {tomorrowEvent && tomorrowEvent?.event_recipes.length > 0 && (
+        {tomorrowEvent && tomorrowEvent?.event_recipes.length > 0 ? (
           <div
             style={styles.accordionContainer}
             onClick={() => setAccordionOpen(!accordionOpen)}
@@ -397,6 +397,12 @@ const Home = ({ user }) => {
                 )}
               </div>
             )}
+          </div>
+        ) : (
+          <div style={styles.accordionContainer}>
+            <div style={styles.accordionHeader}>
+              <span>אין אפייה מחר</span>
+            </div>
           </div>
         )}
 
