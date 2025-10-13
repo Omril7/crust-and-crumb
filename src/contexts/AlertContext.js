@@ -80,7 +80,7 @@ export function AlertProvider({ children }) {
               {alertState.message}
             </div>
             <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <button onClick={alertState.onClose} style={styles.button}>
+              <button onClick={alertState.onClose} style={styles.button} autoFocus>
                 סגור
               </button>
             </div>

@@ -1,23 +1,15 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { supabase } from "../supabaseClient";
 import { useTheme } from "../contexts/ThemeContext";
-import { Input, LinearLoader, Modal, Table } from "./components";
-import { Hash } from "lucide-react";
-import { useScreenSize } from "../hooks/useScreenSize";
-import { formatNumber } from "../utils/helper";
+import { LinearLoader, Modal, Table } from "./components";
+import { formatNumber, getWeightText } from "../utils/helper";
 
 export default function RecipeDetails({ user, recipe, onClose = () => { } }) {
   const { theme } = useTheme();
-  const { isMobile, isTablet } = useScreenSize();
 
   const [loading, setLoading] = useState(false);
   const [recipeData, setRecipeData] = useState(null);
   const [error, setError] = useState(null);
-  const [qty, setQty] = useState(recipe?.qty);
-
-  useEffect(() => {
-    setQty(recipe?.qty);
-  }, [recipe?.qty]);
 
   useEffect(() => {
     if (!recipe?.recipeId) {
@@ -64,7 +56,7 @@ export default function RecipeDetails({ user, recipe, onClose = () => { } }) {
     if (!recipeData?.recipe_ingredients) return [];
     const totalPercent = recipeData.recipe_ingredients.reduce((sum, ing) => sum + (Number(ing.bakerspercent) || 0), 0);
     const doughWeight = Number(recipeData.doughweight) || 0;
-    const multiplier = Number(qty) || 1;
+    const multiplier = Number(recipe?.qty) || 1;
 
     return recipeData.recipe_ingredients.map((ri) => {
       const percent = Number(ri.bakerspercent) || 0;
@@ -75,16 +67,9 @@ export default function RecipeDetails({ user, recipe, onClose = () => { } }) {
         weight,
       };
     });
-  }, [recipeData, qty]);
+  }, [recipeData, recipe?.qty]);
 
   if (!recipe?.recipeId) return null;
-
-  const getWeightText = (weight, fixed = 2) => {
-    const doughWeight = weight >= 1000 ? weight / 1000 : weight;
-    const isGrams = weight < 1000;
-
-    return `${formatNumber(doughWeight, fixed)} ${isGrams ? "גרם" : 'ק"ג'}`
-  };
 
   const styles = {
     card: {
@@ -109,59 +94,41 @@ export default function RecipeDetails({ user, recipe, onClose = () => { } }) {
           <div style={{ display: "flex", gap: 16 }}>
             <div style={styles.card}>
               <div style={{ fontSize: 12, color: theme.colors.textSecondary }}>מחיר מכירה (יחידה / כולל)</div>
-              <div style={{ fontSize: 16, fontWeight: 600 }}>{formatNumber(recipeData.sellingprice, 0) ?? "-"} ₪ / {formatNumber(recipeData.sellingprice * qty, 0) ?? "-"} ₪</div>
+              <div style={{ fontSize: 16, fontWeight: 600 }}>{formatNumber(recipeData.sellingprice, 0) ?? "-"} ₪ / {formatNumber(recipeData.sellingprice * recipe?.qty, 0) ?? "-"} ₪</div>
             </div>
             <div style={styles.card}>
               <div style={{ fontSize: 12, color: theme.colors.textSecondary }}>משקל בצק (יחידה / כולל)</div>
-              <div style={{ fontSize: 16, fontWeight: 600 }}>{getWeightText(recipeData?.doughweight)} / {getWeightText(recipeData?.doughweight * qty)}</div>
+              <div style={{ fontSize: 16, fontWeight: 600 }}>{getWeightText(recipeData?.doughweight)} / {getWeightText(recipeData?.doughweight * recipe?.qty)}</div>
             </div>
           </div>
 
           {/* Ingredients table */}
-          <div>
-            <h4 style={{ marginBottom: 8, fontSize: 14, color: theme.colors.textPrimary }}>
-              מחושב על פי <Input
-                label="כמות"
-                type="number"
-                min={1}
-                value={qty}
-                onChange={e => setQty(Number(e.target.value))}
-                icon={<Hash size={isMobile ? 14 : 12} />}
-                style={{
-                  fontSize: isMobile ? '14px' : '12px',
-                  width: isMobile ? '30%' : '15%',
-                }}
-                isSmall={true}
-              /> לחמים
-              &nbsp;<sub>(שינוי במספר פה לא ישנה את הכמות השמורה)</sub>
-            </h4>
-            <div
-              style={{
-                border: "1px solid rgba(0,0,0,0.1)",
-                borderRadius: theme.borderRadius.navbar,
-                overflowX: "auto",
-              }}
-            >
-              <Table
-                title="טבלת רכיבים"
-                sortable={true}
-                headers={[
-                  { key: 'displayName', label: 'מרכיב' },
-                  {
-                    key: 'bakerspercent',
-                    label: 'אחוזי בייקר',
-                    render: (value, _) => `${value}%`
-                  },
-                  {
-                    key: 'weight',
-                    label: 'משקל',
-                    sortable: true,
-                    render: (value, _) => getWeightText(value, 3)
-                  }
-                ]}
-                data={scaledIngredients}
-              />
-            </div>
+          <div
+            style={{
+              border: "1px solid rgba(0,0,0,0.1)",
+              borderRadius: theme.borderRadius.navbar,
+              overflowX: "auto",
+            }}
+          >
+            <Table
+              title="טבלת רכיבים"
+              sortable={true}
+              headers={[
+                { key: 'displayName', label: 'מרכיב' },
+                {
+                  key: 'bakerspercent',
+                  label: 'אחוזי בייקר',
+                  render: (value, _) => `${value}%`
+                },
+                {
+                  key: 'weight',
+                  label: 'משקל',
+                  sortable: true,
+                  render: (value, _) => getWeightText(value)
+                }
+              ]}
+              data={scaledIngredients}
+            />
           </div>
         </div>
       )}

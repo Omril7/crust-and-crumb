@@ -27,6 +27,7 @@ import {
   Trash2,
   Weight
 } from 'lucide-react';
+import { retry } from '../utils/helper';
 
 const INIT_NEW_INGREDIENT = {
   ingredient: '',
@@ -50,8 +51,23 @@ export default function RecipesManager({ user }) {
 
   // ---------------- Fetch data ----------------
   useEffect(() => {
-    fetchRecipes();
-    fetchInventory();
+    const fetchStats = async () => {
+      if (!user) return;
+      setLoading(true);
+
+      try {
+        await Promise.allSettled([
+          retry(fetchRecipes),
+          retry(fetchInventory),
+        ]);
+      } catch (err) {
+        console.error("Error fetching stats:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
   }, []);
 
   const fetchRecipes = async () => {

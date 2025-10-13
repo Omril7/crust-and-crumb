@@ -19,3 +19,26 @@ export const formatNumber = (num, fixed = 2) => {
     ? Number(num).toLocaleString('he-IL', { minimumFractionDigits: fixed, maximumFractionDigits: fixed })
     : Number('0').toLocaleString('he-IL', { minimumFractionDigits: fixed, maximumFractionDigits: fixed });
 };
+
+export const getWeightText = (weight) => {
+  const doughWeight = weight >= 1000 ? weight / 1000 : weight;
+  const isGrams = weight < 1000;
+
+  return `${formatNumber(doughWeight, isGrams ? 1 : 3)} ${isGrams ? "גרם" : 'ק"ג'}`
+};
+
+export const retry = async (fn, retries = 3, delay = 1000) => {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      return await fn(); // success → return
+    } catch (err) {
+      console.warn(`Attempt ${attempt} failed:`, err);
+      if (attempt < retries) {
+        await new Promise((res) => setTimeout(res, delay)); // wait before retry
+      } else {
+        console.error(`All ${retries} retries failed for ${fn.name}`);
+        throw err;
+      }
+    }
+  }
+};
