@@ -310,11 +310,12 @@ const Home = ({ user }) => {
                       <strong>מרכיבים:</strong>
                       <ul style={styles.ingredientList}>
                         {er.recipes?.recipe_ingredients?.map((ing) => {
+                          const specialId = `${er.id}-${ing.id}`
                           const weight = (Number(ing.bakerspercent) / 100) * (er?.recipes?.doughweight / (totalPercent / 100)) * er.qty;
 
                           return (
-                            <li key={ing.id} onClick={(e) => { e.stopPropagation(); toggleCheck(ing.id); }} style={styles.checklistItem(ing.id)}>
-                              <input type="checkbox" checked={checkedItems[ing.id] || false} readOnly style={styles.checklistInput(ing.id)} />
+                            <li key={specialId} onClick={(e) => { e.stopPropagation(); toggleCheck(specialId); }} style={styles.checklistItem(specialId)}>
+                              <input type="checkbox" checked={checkedItems[specialId] || false} readOnly style={styles.checklistInput(specialId)} />
                               <span> {ing.inventory?.ingredient} — {getWeightText(weight)}</span>
                             </li>
                           );
