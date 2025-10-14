@@ -64,9 +64,7 @@ export default function Inventory({ user }) {
   const [newIngredient, setNewIngredient] = useState(INIT_NEW_INGREDIENT);
   const [updatedIngredient, setUpdatedIngredient] = useState(INIT_UPDATED_INGREDIENT);
 
-  const [editingQty, setEditingQty] = useState(null);
-  const [editingLowthreshold, setEditingLowthreshold] = useState(null);
-  const [editingPrice, setEditingPrice] = useState(null);
+  const [editing, setEditing] = useState(null);
 
   // Load inventory
   useEffect(() => {
@@ -153,7 +151,6 @@ export default function Inventory({ user }) {
     setNewIngredient(INIT_NEW_INGREDIENT);
   };
 
-
   // Update ingredient qty (same for base or derived)
   const updateIngredient = async () => {
     if (!(updatedIngredient.id && updatedIngredient.qty)) {
@@ -206,46 +203,18 @@ export default function Inventory({ user }) {
   };
 
   // Editable fields helpers
-  const startEditQty = (id, value) => setEditingQty({ id, value: value.toString() });
-  const saveEditQty = async () => {
-    if (!editingQty) return;
-    const { id, value } = editingQty;
+  const startEdit = (id, value, key) => setEditing({ id, value: value.toString(), key });
+  const saveEdit = async () => {
+    if (!editing) return;
+    const { id, value, key } = editing;
     const { data, error } = await supabase
       .from("inventory")
-      .update({ qty: parseFloat(value) })
+      .update({ [key]: parseFloat(value) })
       .eq("id", id)
       .select()
       .single();
     if (!error && data) setInventory(inventory.map(i => i.id === id ? data : i));
-    setEditingQty(null);
-  };
-
-  const startEditLowthreshold = (id, value) => setEditingLowthreshold({ id, value: value.toString() });
-  const saveEditLowthreshold = async () => {
-    if (!editingLowthreshold) return;
-    const { id, value } = editingLowthreshold;
-    const { data, error } = await supabase
-      .from("inventory")
-      .update({ lowthreshold: parseFloat(value) })
-      .eq("id", id)
-      .select()
-      .single();
-    if (!error && data) setInventory(inventory.map(i => i.id === id ? data : i));
-    setEditingLowthreshold(null);
-  };
-
-  const startEditPrice = (id, value) => setEditingPrice({ id, value: value.toString() });
-  const saveEditPrice = async () => {
-    if (!editingPrice) return;
-    const { id, value } = editingPrice;
-    const { data, error } = await supabase
-      .from("inventory")
-      .update({ price_per_unit: parseFloat(value) })
-      .eq("id", id)
-      .select()
-      .single();
-    if (!error && data) setInventory(inventory.map(i => i.id === id ? data : i));
-    setEditingPrice(null);
+    setEditing(null);
   };
 
   const sortedInventory = [...inventory].sort((a, b) => {
@@ -354,16 +323,14 @@ export default function Inventory({ user }) {
             ) : (
               <div
                 style={{ cursor: "pointer" }}
-                onClick={() => startEditQty(row.id, row.qty)}
+                onClick={() => startEdit(row.id, row.qty, 'qty')}
               >
-                {editingQty?.id === row.id ? (
+                {editing?.id === row.id && editing?.key === 'qty' ? (
                   <input
                     type="number"
-                    value={editingQty.value}
-                    onChange={(e) =>
-                      setEditingQty({ id: row.id, value: e.target.value })
-                    }
-                    onBlur={saveEditQty}
+                    value={editing.value}
+                    onChange={(e) => startEdit(row.id, e.target.value, 'qty')}
+                    onBlur={saveEdit}
                     autoFocus
                     style={styles.editInput}
                   />
@@ -372,7 +339,6 @@ export default function Inventory({ user }) {
               </div>
             )}
           </>
-
         )
       },
       {
@@ -385,16 +351,14 @@ export default function Inventory({ user }) {
             ) : (
               <div
                 style={{ cursor: "pointer" }}
-                onClick={() => startEditLowthreshold(row.id, row.lowthreshold)}
+                onClick={() => startEdit(row.id, row.lowthreshold, 'lowthreshold')}
               >
-                {editingLowthreshold?.id === row.id ? (
+                {editing?.id === row.id && editing?.key === 'lowthreshold' ? (
                   <input
                     type="number"
-                    value={editingLowthreshold.value}
-                    onChange={(e) =>
-                      setEditingLowthreshold({ id: row.id, value: e.target.value })
-                    }
-                    onBlur={saveEditLowthreshold}
+                    value={editing.value}
+                    onChange={(e) => startEdit(row.id, e.target.value, 'lowthreshold')}
+                    onBlur={saveEdit}
                     autoFocus
                     style={styles.editInput}
                   />
@@ -403,7 +367,6 @@ export default function Inventory({ user }) {
               </div>
             )}
           </>
-
         )
       },
     ];
@@ -416,26 +379,23 @@ export default function Inventory({ user }) {
           render: (value, row) => (
             <div
               style={{ cursor: "pointer" }}
-              onClick={() => startEditPrice(row.id, row.price_per_unit)}
+              onClick={() => startEdit(row.id, row.price_per_unit, 'price_per_unit')}
             >
-              {editingPrice?.id === row.id ? (
+              {editing?.id === row.id && editing?.key === 'price_per_unit' ? (
                 <input
                   type="number"
-                  value={editingPrice.value}
-                  onChange={(e) =>
-                    setEditingPrice({ id: row.id, value: e.target.value })
-                  }
-                  onBlur={saveEditPrice}
+                  value={editing.value}
+                    onChange={(e) => startEdit(row.id, e.target.value, 'price_per_unit')}
+                  onBlur={saveEdit}
                   autoFocus
                   style={styles.editInput}
                 />
               ) : `₪${formatNumber(value)}`
               }
             </div>
-
           )
         },
-        { key: "lastupdate", label: "עידכון אחרון", render: (value, row) => parseDate(value) }
+        { key: "lastupdate", label: "עידכון אחרון", render: (value, _) => parseDate(value) }
       );
     }
 

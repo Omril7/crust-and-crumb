@@ -16,8 +16,9 @@ export const Input = ({
   iconPosition = 'left',
   list = null,
   dataList = null,
-  rows, // <-- new prop
-  isSmall = false
+  rows,
+  isSmall = false,
+  bgColor = '#f9f9f9'
 }) => {
   const { theme } = useTheme();
   const [isFocused, setIsFocused] = useState(false);
@@ -32,14 +33,14 @@ export const Input = ({
     },
     inputGroup: {
       display: 'flex',
-      alignItems: rows ? 'flex-start' : 'center', // top align if textarea
+      alignItems: rows ? 'flex-start' : 'center',
       gap: 6,
-      backgroundColor: theme.inputBackground || '#fff',
-      border: `1.5px solid ${theme.borderColor || '#ccc'}`,
+      backgroundColor: '#fff',
+      border: '1.5px solid #ccc',
       borderRadius: 8,
       padding: rows ? '8px 12px' : isSmall ? '2px 2px 2px 0px' : '8px 12px 8px 0px',
       fontSize: '1rem',
-      color: theme.textPrimary || '#333',
+      color: '#333',
       transition: 'border-color 0.3s',
     },
     input: {
@@ -49,11 +50,11 @@ export const Input = ({
       outline: 'none',
       fontSize: isSmall ? "0.75rem" : '1rem',
       backgroundColor: 'transparent',
-      color: theme.textPrimary || '#333',
+      color: '#333',
       fontFamily: theme.fontFamily || 'Arial, sans-serif',
       direction: 'rtl',
       resize: 'vertical',
-      minHeight: rows ? `${rows * 1.5}em` : 'auto', // adjust height
+      minHeight: rows ? `${rows * 1.5}em` : 'auto',
     },
     iconWrapper: {
       position: 'relative',
@@ -79,7 +80,7 @@ export const Input = ({
       userSelect: 'none',
     },
     floatingLabelFloating: {
-      background: "linear-gradient(to bottom, #f9f9f9 50%, #fff 50%)",
+      background: `linear-gradient(to bottom, ${bgColor} 50%, #fff 50%)`,
       top: '-0.6em',
       fontSize: isSmall ? '0.75rem' : '0.85rem',
       color: theme.textPrimary || '#333',
@@ -164,9 +165,7 @@ export const Button = ({ title, onClick, isGood = true, disabled = false, icon =
     alignItems: 'center',
     gap: 6,
     padding: '12px 20px',
-    backgroundColor: disabled
-      ? isGood ? '#d4b896' : '#e6a89f' // Disabled: muted wheat & soft coral
-      : isGood ? '#8b6914' : '#c44536', // Active: golden brown & warm brick
+    backgroundColor: disabled ? isGood ? '#d4b896' : '#e6a89f' : isGood ? '#8b6914' : '#c44536',
     color: theme.buttonText || '#fff',
     border: 'none',
     borderRadius: 10,
@@ -175,7 +174,7 @@ export const Button = ({ title, onClick, isGood = true, disabled = false, icon =
     cursor: disabled ? 'not-allowed' : 'pointer',
     userSelect: 'none',
     transition: 'background-color 0.3s',
-    boxShadow: theme.shadows.activeButton, // Golden shadow
+    boxShadow: theme.shadows.activeButton,
     alignSelf: 'flex-start',
     width: 'fit-content'
   };
@@ -187,7 +186,7 @@ export const Button = ({ title, onClick, isGood = true, disabled = false, icon =
     justifyContent: 'center',
     width: 20,
     height: 20,
-    color: theme.textPrimary || '#f5f1e8', // Cream white for better contrast
+    color: theme.textPrimary || '#f5f1e8',
     cursor: 'default',
     ...(iconPosition === 'left' ? { marginLeft: 8 } : { marginRight: 8 }),
     pointerEvents: 'none',
@@ -218,7 +217,8 @@ export const Select = ({
   options = [],
   style = {},
   icon = null,
-  iconPosition = 'left', // 'left' or 'right'
+  iconPosition = 'left',
+  bgColor = '#f9f9f9'
 }) => {
   const { theme } = useTheme();
   const [isFocused, setIsFocused] = useState(false);
@@ -233,12 +233,12 @@ export const Select = ({
       display: 'flex',
       alignItems: 'center',
       gap: 6,
-      backgroundColor: theme.inputBackground || '#fff',
-      border: `1.5px solid ${theme.borderColor || '#ccc'}`,
+      backgroundColor: '#fff',
+      border: '1.5px solid #ccc',
       borderRadius: 8,
       padding: '8px 12px 8px 0px',
       fontSize: '1rem',
-      color: theme.textPrimary || '#333',
+      color: '#333',
       transition: 'border-color 0.3s',
     },
     select: {
@@ -247,7 +247,7 @@ export const Select = ({
       outline: 'none',
       fontSize: '1rem',
       backgroundColor: 'transparent',
-      color: theme.textPrimary || '#333',
+      color: '#333',
       fontFamily: theme.fontFamily || 'Arial, sans-serif',
       direction: 'rtl',
       cursor: 'pointer',
@@ -260,27 +260,27 @@ export const Select = ({
       justifyContent: 'center',
       width: 20,
       height: 20,
-      color: theme.textPrimary || '#333',
+      color: '#333',
       cursor: 'default',
       ...(iconPosition === 'left' ? { marginLeft: 8 } : { marginRight: 8 }),
       pointerEvents: 'none',
     },
     floatingLabel: {
       position: 'absolute',
-      backgroundColor: theme.inputBackground || '#fff',
+      backgroundColor: '#fff',
       padding: '0 4px',
       fontWeight: 500,
-      color: theme.textPrimary || '#333',
+      color: '#333',
       pointerEvents: 'none',
       right: 12,
       transition: 'all 0.2s ease',
       userSelect: 'none',
     },
     floatingLabelFloating: {
-      background: 'linear-gradient(to bottom, #f9f9f9 50%, #fff 50%)',
+      background: `linear-gradient(to bottom, ${bgColor} 50%, #fff 50%)`,
       top: '-0.6em',
       fontSize: '0.85rem',
-      color: theme.textPrimary || '#333',
+      color: '#333',
     },
     floatingLabelInside: {
       top: '50%',
@@ -336,6 +336,7 @@ export const SelectWithSearchBar = ({
   options = [],
   style = {},
   icon = null,
+  bgColor = '#f9f9f9'
 }) => {
   const { theme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
@@ -345,7 +346,6 @@ export const SelectWithSearchBar = ({
 
   const filteredOptions = options.filter((opt) => opt.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
-  // Close on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -367,12 +367,12 @@ export const SelectWithSearchBar = ({
       display: "flex",
       alignItems: "center",
       justifyContent: "space-between",
-      backgroundColor: theme.inputBackground || "#fff",
-      border: `1.5px solid ${theme.borderColor || "#ccc"}`,
+      backgroundColor: "#fff",
+      border: '1.5px solid #ccc',
       borderRadius: 8,
       padding: "8px 12px",
       fontSize: "1rem",
-      color: theme.textPrimary || "#333",
+      color: "#333",
       cursor: "pointer",
     },
     dropdown: {
@@ -380,8 +380,8 @@ export const SelectWithSearchBar = ({
       top: "100%",
       left: 0,
       right: 0,
-      background: theme.inputBackground || "#fff",
-      border: `1px solid ${theme.borderColor || "#ccc"}`,
+      background: "#fff",
+      border: '1px solid #ccc',
       borderRadius: 8,
       marginTop: 4,
       maxHeight: 200,
@@ -396,26 +396,26 @@ export const SelectWithSearchBar = ({
       width: "90%",
       padding: "6px 10px",
       border: "none",
-      borderBottom: `1px solid ${theme.borderColor || "#ccc"}`,
+      borderBottom: '1px solid #ccc',
       outline: "none",
       fontSize: "1rem",
     },
     floatingLabel: {
       position: 'absolute',
-      backgroundColor: theme.inputBackground || '#fff',
+      backgroundColor: '#fff',
       padding: '0 4px',
       fontWeight: 500,
-      color: theme.textPrimary || '#333',
+      color: '#333',
       pointerEvents: 'none',
       right: 12,
       transition: 'all 0.2s ease',
       userSelect: 'none',
     },
     floatingLabelFloating: {
-      background: 'linear-gradient(to bottom, #f9f9f9 50%, #fff 50%)',
+      background: `linear-gradient(to bottom, ${bgColor} 50%, #fff 50%)`,
       top: '-0.6em',
       fontSize: '0.85rem',
-      color: theme.textPrimary || '#333',
+      color: '#333',
     },
     floatingLabelInside: {
       top: '50%',
@@ -490,27 +490,24 @@ export const SelectWithSearchBar = ({
 
 export const Table = ({ title, headers, data, sortable = false }) => {
   const { theme } = useTheme();
-  const { isMobile, isTablet, isDesktop } = useScreenSize();
+  const { isMobile, isTablet } = useScreenSize();
   const [sortConfig, setSortConfig] = useState({ key: null, direction: null });
 
   const sortedData = useMemo(() => {
     if (!sortConfig.key || !sortable) return data;
 
-    // Helper to normalize qty/minimum by unit
     const normalize = (value, unit) => {
       if (unit === 'קג') return parseFloat(value) * 1000;
       return parseFloat(value);
     };
 
     return [...data].sort((a, b) => {
-      // For qty and lowThreshold, normalize by unit
       if (['qty', 'lowThreshold'].includes(sortConfig.key)) {
         const aVal = normalize(a[sortConfig.key], a.unit);
         const bVal = normalize(b[sortConfig.key], b.unit);
         return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal;
       }
 
-      // ...existing string/number sorting...
       const aVal = a[sortConfig.key];
       const bVal = b[sortConfig.key];
 
@@ -543,7 +540,7 @@ export const Table = ({ title, headers, data, sortable = false }) => {
         if (prevConfig.direction === 'asc') {
           return { key, direction: 'desc' };
         } else if (prevConfig.direction === 'desc') {
-          return { key: null, direction: null }; // Reset to no sort
+          return { key: null, direction: null };
         }
       }
       return { key, direction: 'asc' };
@@ -551,7 +548,7 @@ export const Table = ({ title, headers, data, sortable = false }) => {
   };
 
   const getSortIcon = (key, sortable) => {
-    if (!sortable || isMobile) return null; // Hide sort icons on mobile
+    if (!sortable || isMobile) return null;
 
     const iconSize = isTablet ? 14 : 16;
 
@@ -576,8 +573,7 @@ export const Table = ({ title, headers, data, sortable = false }) => {
       maxHeight: isMobile ? 'calc(100vh - 300px)' : isTablet ? 350 : 400,
       overflowY: 'auto',
       overflowX: 'auto',
-      WebkitOverflowScrolling: 'touch', // Smooth scrolling on iOS
-      // Mobile-specific improvements
+      WebkitOverflowScrolling: 'touch',
       ...(isMobile && {
         fontSize: '14px',
         marginTop: '10px',
@@ -604,12 +600,11 @@ export const Table = ({ title, headers, data, sortable = false }) => {
       whiteSpace: isMobile ? 'normal' : 'nowrap',
       fontSize: isMobile ? '0.8rem' : isTablet ? '0.9rem' : '1rem',
       lineHeight: isMobile ? '1.2' : '1.4',
-      // Allow text wrapping on mobile for long headers
       wordWrap: isMobile ? 'break-word' : 'normal',
       maxWidth: isMobile ? '80px' : 'none',
     },
     thSortable: {
-      cursor: !isMobile ? 'pointer' : 'default', // Remove pointer cursor on mobile
+      cursor: !isMobile ? 'pointer' : 'default',
       transition: 'background-color 0.2s',
       '&:hover': !isMobile ? {
         backgroundColor: theme.tableHeaderHover || '#e8e8e8',
@@ -621,7 +616,6 @@ export const Table = ({ title, headers, data, sortable = false }) => {
       justifyContent: isMobile ? 'center' : 'flex-start',
       gap: isMobile ? '2px' : '4px',
       flexDirection: isMobile ? 'column' : 'row',
-      // Stack icon below text on mobile if space is tight
       ...(isMobile && {
         minHeight: '32px',
       })
@@ -636,12 +630,10 @@ export const Table = ({ title, headers, data, sortable = false }) => {
       lineHeight: isMobile ? '1.2' : '1.4',
       maxWidth: isMobile ? '100px' : 'none',
       wordWrap: isMobile ? 'break-word' : 'normal',
-      // Better spacing for touch targets on mobile
       ...(isMobile && {
         minHeight: '36px',
       })
     },
-    // Title styling
     tableTitle: {
       padding: isMobile ? '8px 12px' : '12px 16px',
       backgroundColor: theme.colors?.primaryGradient || '#4caf50',
@@ -655,7 +647,6 @@ export const Table = ({ title, headers, data, sortable = false }) => {
       top: 0,
       zIndex: 3,
     },
-    // Empty state
     emptyState: {
       padding: isMobile ? '20px' : '40px',
       textAlign: 'center',
@@ -663,7 +654,6 @@ export const Table = ({ title, headers, data, sortable = false }) => {
       fontSize: isMobile ? '0.9rem' : '1rem',
       fontStyle: 'italic',
     },
-    // Mobile-specific row styling
     mobileRow: {
       borderBottom: `2px solid ${theme.borderColor || '#ddd'}`,
       '&:last-child': {
@@ -672,7 +662,6 @@ export const Table = ({ title, headers, data, sortable = false }) => {
     }
   };
 
-  // If no data, show empty state
   if (!data || data.length === 0) {
     return (
       <div style={styles.tableWrapper}>
@@ -692,7 +681,7 @@ export const Table = ({ title, headers, data, sortable = false }) => {
             {headers.map((header, index) => {
               const key = typeof header === 'string' ? header : header.key;
               const label = typeof header === 'string' ? header : (header.label ?? header.key);
-              const isSortable = sortable && (header.sortable !== false) && !isMobile; // Disable sorting on mobile
+              const isSortable = sortable && (header.sortable !== false) && !isMobile;
 
               return (
                 <th
@@ -807,7 +796,6 @@ export const Modal = ({ title, handleClose, modalStyles, children }) => {
   return (
     <div style={styles.modalBackdrop} onClick={handleClose}>
       <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
         <div style={styles.modalHeader}>
           <h2 style={styles.modalTitle}>{title}</h2>
           <button
@@ -847,7 +835,7 @@ export const CircularLoader = () => {
 
 export const Header = ({ title, icon }) => {
   const { theme } = useTheme();
-  const { isMobile, isTablet, isDesktop } = useScreenSize();
+  const { isMobile, isTablet } = useScreenSize();
 
   const style = {
     textAlign: 'center',
@@ -905,7 +893,7 @@ export const LinearLoader = () => {
 };
 
 export const Container = ({ children }) => {
-  const { isMobile, isTablet, isDesktop } = useScreenSize();
+  const { isMobile, isTablet } = useScreenSize();
 
   const style = {
     direction: 'rtl',
@@ -919,13 +907,11 @@ export const Container = ({ children }) => {
     boxShadow: isMobile ? '0 2px 8px rgba(0,0,0,0.1)' : isTablet ? '0 3px 10px rgba(0,0,0,0.1)' : '0 4px 12px rgba(0,0,0,0.1)',
     borderRadius: isMobile ? 8 : isTablet ? 10 : 12,
     overflow: 'hidden',
-    // Mobile-specific optimizations
     ...(isMobile && {
       position: 'relative',
       marginTop: '8px',
       marginBottom: '8px',
     }),
-    // Tablet-specific optimizations
     ...(isTablet && {
       marginTop: '12px',
       marginBottom: '12px',
@@ -969,8 +955,8 @@ export const Accordion = ({ open, onClick = undefined, title, children }) => {
   };
 
   return (
-    <div style={styles.accordionContainer} onClick={onClick}>
-      <div style={styles.accordionHeader}>
+    <div style={styles.accordionContainer}>
+      <div style={styles.accordionHeader} onClick={onClick}>
         <span>{title}</span>
         {onClick && (open ? <ChevronUp /> : <ChevronDown />)}
       </div>

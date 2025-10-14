@@ -16,6 +16,7 @@ import {
   Select,
   Table
 } from '../components/components';
+import RecipeDetails from '../components/RecipeDetails';
 
 // Icons
 import {
@@ -30,7 +31,6 @@ import {
   TreePalm,
   X,
 } from 'lucide-react';
-import RecipeDetails from '../components/RecipeDetails';
 
 export default function BakePlanningManager({ user }) {
   const { theme } = useTheme();
@@ -679,6 +679,7 @@ export default function BakePlanningManager({ user }) {
                 fontSize: isMobile ? '16px' : '14px',
                 marginBottom: 15
               }}
+              bgColor='white'
             />
 
             <Input
@@ -693,6 +694,7 @@ export default function BakePlanningManager({ user }) {
                 marginBottom: 15,
                 width: isMobile ? '100%' : '40%',
               }}
+              bgColor='white'
             />
 
             {/* Weekly Repeat Option */}
@@ -724,6 +726,7 @@ export default function BakePlanningManager({ user }) {
                   fontSize: isMobile ? '16px' : '14px',
                   marginBottom: 15
                 }}
+                bgColor='white'
               />
             )}
 

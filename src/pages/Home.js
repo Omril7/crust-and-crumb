@@ -147,6 +147,7 @@ const Home = ({ user }) => {
       setTomorrowEvent(data);
     } else {
       setTomorrowEvent(null);
+      setCheckedItems({});
     }
   };
 
@@ -311,7 +312,7 @@ const Home = ({ user }) => {
                       <strong>מרכיבים:</strong>
                       <ul style={styles.ingredientList}>
                         {er.recipes?.recipe_ingredients?.map((ing) => {
-                          const specialId = `${er.id}-${ing.id}`
+                          const specialId = `${er.id}-${ing.id}`;
                           const weight = (Number(ing.bakerspercent) / 100) * (er?.recipes?.doughweight / (totalPercent / 100)) * er.qty;
 
                           return (

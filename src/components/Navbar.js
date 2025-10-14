@@ -8,8 +8,6 @@ import { useConfirm } from '../contexts/ConfirmContext';
 const NAV_ITEMS = [
   { id: '', label: 'בית' },
   { id: 'recipes', label: 'מתכונים' },
-  // { id: 'clients', label: 'לקוחות' },
-  // { id: 'orders', label: 'הזמנות' },
   { id: 'bakePlanning', label: 'תכנון אפייה' },
   { id: 'inventory', label: 'מלאי' }
 ];

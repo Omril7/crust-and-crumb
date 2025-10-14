@@ -358,6 +358,7 @@ export default function RecipesManager({ user }) {
               min={1}
               icon={<Weight size={isMobile ? 20 : 18} />}
               style={{ width: "50%" }}
+              bgColor='white'
             />
 
             <div style={{
@@ -406,6 +407,7 @@ export default function RecipesManager({ user }) {
               min={1}
               icon={<span style={{ fontWeight: 'bold', fontSize: isMobile ? '1.1rem' : '1.3rem' }}>₪</span>}
               style={{ width: "50%" }}
+              bgColor='white'
             />
             <Button
               title={"מחק מתכון"}
