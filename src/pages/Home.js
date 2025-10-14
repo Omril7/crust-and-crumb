@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 // Contexts
 import { supabase } from '../supabaseClient';
 import { useNavigate } from 'react-router-dom';
+import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useTheme } from '../contexts/ThemeContext';
 
 // Components
@@ -29,7 +30,7 @@ const Home = ({ user }) => {
   const [tomorrowEvent, setTomorrowEvent] = useState(null);
   const [accordionOpen, setAccordionOpen] = useState(false);
   const [openRecipes, setOpenRecipes] = useState({});
-  const [checkedItems, setCheckedItems] = useState({});
+  const [checkedItems, setCheckedItems] = useLocalStorage('CCCheckedItems', {});
 
   // ================= Fetch Stats =================
   useEffect(() => {
