@@ -802,7 +802,7 @@ export const Modal = ({ title, handleClose, modalStyles, children }) => {
       minWidth: isMobile ? '30px' : 'auto',
       minHeight: isMobile ? '30px' : 'auto',
     }
-  }
+  };
 
   return (
     <div style={styles.modalBackdrop} onClick={handleClose}>
@@ -937,4 +937,49 @@ export const Container = ({ children }) => {
       {children}
     </div>
   );
+};
+
+export const Accordion = ({ open, onClick = undefined, title, children }) => {
+  const { theme } = useTheme();
+  const styles = {
+    accordionContainer: {
+      background: 'rgba(255, 255, 255, 0.8)',
+      borderRadius: '16px',
+      padding: '16px 24px',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+      border: '1px solid rgba(217, 160, 102, 0.2)',
+      transition: 'all 0.3s ease',
+      cursor: 'pointer',
+      marginBottom: '24px'
+    },
+    accordionHeader: {
+      display: 'flex',
+      justifyContent: !!onClick ? 'space-between' : 'center',
+      alignItems: 'center',
+      fontSize: '20px',
+      fontWeight: '600',
+      color: theme.accent.primary,
+    },
+    accordionBody: {
+      marginTop: '12px',
+      color: theme.colors.textLight,
+      fontSize: '16px',
+      lineHeight: 1.6,
+    },
+  };
+
+  return (
+    <div style={styles.accordionContainer} onClick={onClick}>
+      <div style={styles.accordionHeader}>
+        <span>{title}</span>
+        {onClick && (open ? <ChevronUp /> : <ChevronDown />)}
+      </div>
+
+      {open && (
+        <div style={styles.accordionBody}>
+          {children}
+        </div>
+      )}
+    </div>
+  )
 };

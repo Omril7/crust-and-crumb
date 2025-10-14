@@ -42,7 +42,6 @@ function App() {
             recipe:recipe_id(
               id,
               doughweight,
-              type,
               recipe_ingredients(
                 id,
                 bakerspercent,

@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 
 // Components
-import { CircularLoader } from '../components/components';
+import { Accordion, CircularLoader } from '../components/components';
 
 // Icons
 import {
@@ -95,8 +95,13 @@ const Home = ({ user }) => {
     const tomorrow = new Date(today);
     tomorrow.setDate(today.getDate() + 1);
 
-    const startOfDay = new Date(tomorrow.setHours(0, 0, 0, 0)).toISOString();
-    const endOfDay = new Date(tomorrow.setHours(23, 59, 59, 999)).toISOString();
+    const pad = (n) => String(n).padStart(2, '0');
+
+    const yyyy = tomorrow.getFullYear();
+    const mm = pad(tomorrow.getMonth() + 1);
+    const dd = pad(tomorrow.getDate());
+
+    const tommorowString = `${yyyy}-${mm}-${dd}`;
 
     const { data, error } = await supabase
       .from("events")
@@ -129,17 +134,16 @@ const Home = ({ user }) => {
           )
         `)
       .eq("user_id", user.id)
-      .gte("event_date", startOfDay)
-      .lte("event_date", endOfDay)
-      .order("event_date", { ascending: true });
+      .eq("event_date", tommorowString)
+      .single();
 
     if (error) {
       console.error("Error fetching tomorrow’s event:", error);
       return;
     }
 
-    if (data && data.length > 0) {
-      setTomorrowEvent(data[0]);
+    if (data) {
+      setTomorrowEvent(data);
     } else {
       setTomorrowEvent(null);
     }
@@ -157,6 +161,16 @@ const Home = ({ user }) => {
       ...prev,
       [id]: !prev[id],
     }));
+  };
+
+  const handleClickAccordion = (e) => {
+    e.stopPropagation();
+    setAccordionOpen(!accordionOpen);
+  };
+
+  const handleClickSubAccordion = (e, er) => {
+    e.stopPropagation();
+    toggleRecipeAccordion(er.id);
   };
 
   // ================= Cards =================
@@ -231,30 +245,6 @@ const Home = ({ user }) => {
       color: theme.colors.textLight,
       fontSize: '16px'
     },
-    accordionContainer: {
-      background: 'rgba(255, 255, 255, 0.8)',
-      borderRadius: '16px',
-      padding: '16px 24px',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-      border: '1px solid rgba(217, 160, 102, 0.2)',
-      transition: 'all 0.3s ease',
-      cursor: 'pointer',
-      marginBottom: '24px'
-    },
-    accordionHeader: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      fontSize: '20px',
-      fontWeight: '600',
-      color: theme.accent.primary,
-    },
-    accordionBody: {
-      marginTop: '12px',
-      color: theme.colors.textLight,
-      fontSize: '16px',
-      lineHeight: 1.6,
-    },
     recipeItem: {
       marginTop: '12px',
       padding: '12px',
@@ -272,7 +262,7 @@ const Home = ({ user }) => {
       color: theme.colors.textLight,
       marginTop: '12px'
     },
-    checklistItem: {
+    checklistItem: (ingId) => ({
       display: "flex",
       alignItems: "center",
       gap: "8px",
@@ -280,9 +270,22 @@ const Home = ({ user }) => {
       cursor: "pointer",
       transition: "all 0.2s ease",
       borderBottom: "1px solid rgba(0,0,0,0.05)",
-    },
-
-
+      textDecoration: checkedItems[ingId] ? "line-through" : "none",
+      color: checkedItems[ingId] ? "rgba(0,0,0,0.4)" : theme.colors.textLight,
+    }),
+    checklistInput: (ingId) => ({
+      width: "18px",
+      height: "18px",
+      borderRadius: "50%",
+      border: "2px solid " + theme.accent.primary,
+      accentColor: theme.accent.primary,
+      cursor: "pointer",
+      appearance: "none",
+      display: "grid",
+      placeItems: "center",
+      backgroundColor: checkedItems[ingId] ? theme.accent.primary : "transparent",
+      transition: "all 0.2s ease",
+    })
   };
 
   return (
@@ -293,117 +296,38 @@ const Home = ({ user }) => {
 
         {/* Tomorrow's Baking Accordion */}
         {tomorrowEvent && tomorrowEvent?.event_recipes.length > 0 ? (
-          <div
-            style={styles.accordionContainer}
-            onClick={() => setAccordionOpen(!accordionOpen)}
-          >
-            <div style={styles.accordionHeader}>
-              <span>אפייה למחר</span>
-              {accordionOpen ? <ChevronUp /> : <ChevronDown />}
-            </div>
+          <Accordion open={accordionOpen} onClick={handleClickAccordion} title={`אפייה למחר - (${new Date(tomorrowEvent.event_date).toLocaleDateString('he-IL')})`}>
+            {tomorrowEvent.notes && <p><strong>הערות:</strong> {tomorrowEvent.notes}</p>}
 
-            {accordionOpen && (
-              <div style={styles.accordionBody}>
-                {tomorrowEvent ? (
-                  <>
-                    <p><strong>תאריך:</strong> {new Date(tomorrowEvent.event_date).toLocaleDateString('he-IL')}</p>
-                    {tomorrowEvent.notes && <p><strong>הערות:</strong> {tomorrowEvent.notes}</p>}
+            {/* 🔹 Nested Accordions for Each Recipe */}
+            {tomorrowEvent.event_recipes.map((er) => {
+              const totalPercent = er?.recipes?.recipe_ingredients.reduce((sum, ing) => sum + (Number(ing.bakerspercent) || 0), 0);
 
-                    {/* 🔹 Nested Accordions for Each Recipe */}
-                    {tomorrowEvent.event_recipes.map((er) => {
-                      const totalPercent = er?.recipes?.recipe_ingredients.reduce(
-                        (sum, ing) => sum + (Number(ing.bakerspercent) || 0),
-                        0
-                      );
+              return (
+                <div key={er.id} style={{ marginTop: "16px" }}>
+                  <Accordion open={openRecipes[er.id]} onClick={(e) => handleClickSubAccordion(e, er)} title={`${er.recipes?.name || 'מתכון לא ידוע'} × ${er.qty}`}>
+                    <div style={styles.accordionBody}>
+                      <strong>מרכיבים:</strong>
+                      <ul style={styles.ingredientList}>
+                        {er.recipes?.recipe_ingredients?.map((ing) => {
+                          const weight = (Number(ing.bakerspercent) / 100) * (er?.recipes?.doughweight / (totalPercent / 100)) * er.qty;
 
-                      return (
-                        <div key={er.id} style={{ marginTop: "16px" }}>
-                          <div
-                            style={{
-                              ...styles.accordionContainer,
-                              background: 'rgba(255,255,255,0.6)',
-                              padding: '12px 16px',
-                              marginBottom: '8px'
-                            }}
-                            onClick={(e) => {
-                              e.stopPropagation(); // prevent parent accordion toggle
-                              toggleRecipeAccordion(er.id);
-                            }}
-                          >
-                            <div style={styles.accordionHeader}>
-                              <span>
-                                {er.recipes?.name || 'מתכון לא ידוע'} × {er.qty}
-                              </span>
-                              {openRecipes[er.id] ? <ChevronUp /> : <ChevronDown />}
-                            </div>
-
-                            {openRecipes[er.id] && (
-                              <div style={styles.accordionBody}>
-                                <strong>מרכיבים:</strong>
-                                <ul style={styles.ingredientList}>
-                                  {er.recipes?.recipe_ingredients?.map((ing) => {
-                                    const weight =
-                                      (Number(ing.bakerspercent) / 100) *
-                                      (er?.recipes?.doughweight / (totalPercent / 100)) *
-                                      er.qty;
-
-                                    return (
-                                      <li
-                                        key={ing.id}
-                                        onClick={(e) => {
-                                          e.stopPropagation(); // prevent toggling accordion
-                                          toggleCheck(ing.id);
-                                        }}
-                                        style={{
-                                          ...styles.checklistItem,
-                                          textDecoration: checkedItems[ing.id] ? "line-through" : "none",
-                                          color: checkedItems[ing.id] ? "rgba(0,0,0,0.4)" : theme.colors.textLight,
-                                        }}
-                                      >
-                                        <input
-                                          type="checkbox"
-                                          checked={checkedItems[ing.id] || false}
-                                          readOnly
-                                          style={{
-                                            width: "18px",
-                                            height: "18px",
-                                            borderRadius: "50%",
-                                            border: "2px solid " + theme.accent.primary,
-                                            accentColor: theme.accent.primary,
-                                            cursor: "pointer",
-                                            appearance: "none",
-                                            display: "grid",
-                                            placeItems: "center",
-                                            backgroundColor: checkedItems[ing.id] ? theme.accent.primary : "transparent",
-                                            transition: "all 0.2s ease",
-                                          }}
-                                        />
-                                        <span>
-                                          {ing.inventory?.ingredient} — {getWeightText(weight)}
-                                        </span>
-                                      </li>
-                                    );
-                                  })}
-                                </ul>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </>
-                ) : (
-                  <p style={styles.noEvent}>אין יום אפייה מתוכנן למחר</p>
-                )}
-              </div>
-            )}
-          </div>
+                          return (
+                            <li key={ing.id} onClick={(e) => { e.stopPropagation(); toggleCheck(ing.id); }} style={styles.checklistItem(ing.id)}>
+                              <input type="checkbox" checked={checkedItems[ing.id] || false} readOnly style={styles.checklistInput(ing.id)} />
+                              <span> {ing.inventory?.ingredient} — {getWeightText(weight)}</span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  </Accordion>
+                </div>
+              );
+            })}
+          </Accordion>
         ) : (
-          <div style={styles.accordionContainer}>
-            <div style={{ ...styles.accordionHeader, justifyContent: "center" }}>
-              <span>אין אפייה מחר</span>
-            </div>
-          </div>
+          <Accordion title="אין אפייה מחר" />
         )}
 
         {/* Stats */}
