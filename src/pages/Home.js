@@ -3,7 +3,6 @@ import React, { useEffect, useState } from 'react';
 // Contexts
 import { supabase } from '../supabaseClient';
 import { useNavigate } from 'react-router-dom';
-import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useTheme } from '../contexts/ThemeContext';
 
 // Components
@@ -30,7 +29,6 @@ const Home = ({ user }) => {
   const [tomorrowEvent, setTomorrowEvent] = useState(null);
   const [accordionOpen, setAccordionOpen] = useState(false);
   const [openRecipes, setOpenRecipes] = useState({});
-  const [checkedItems, setCheckedItems] = useLocalStorage('CCCheckedItems', {});
 
   // ================= Fetch Stats =================
   useEffect(() => {
@@ -122,6 +120,7 @@ const Home = ({ user }) => {
               recipe_ingredients (
                 id,
                 bakerspercent,
+                mark,
                 inventory (
                   id,
                   ingredient,
@@ -147,15 +146,60 @@ const Home = ({ user }) => {
       setTomorrowEvent(data);
     } else {
       setTomorrowEvent(null);
-      setCheckedItems({});
     }
   };
 
-  const toggleCheck = (id) => {
-    setCheckedItems((prev) => ({
+  const toggleCheck = async (e, er, ing) => {
+    e.stopPropagation();
+
+    const newMark = !ing.mark;
+
+    // 1️⃣ Optimistically update the UI
+    setTomorrowEvent((prev) => ({
       ...prev,
-      [id]: !prev[id],
+      event_recipes: prev.event_recipes.map((new_er) =>
+        new_er.id !== er.id
+          ? new_er
+          : {
+            ...new_er,
+            recipes: {
+              ...new_er.recipes,
+              recipe_ingredients: new_er.recipes.recipe_ingredients.map((ri) =>
+                ri.id === ing.id ? { ...ri, mark: newMark } : ri
+              ),
+            },
+          }
+      ),
     }));
+
+    // 2️⃣ Send the update to Supabase in background
+    const { error } = await supabase
+      .from("recipe_ingredients")
+      .update({ mark: newMark })
+      .eq("id", ing.id);
+
+    // 3️⃣ If it fails, revert the optimistic update
+    if (error) {
+      console.error("Error updating mark:", error);
+
+      // Revert back to previous state
+      setTomorrowEvent((prev) => ({
+        ...prev,
+        event_recipes: prev.event_recipes.map((new_er) =>
+          new_er.id !== er.id
+            ? new_er
+            : {
+              ...new_er,
+              recipes: {
+                ...new_er.recipes,
+                recipe_ingredients: new_er.recipes.recipe_ingredients.map((ri) =>
+                  ri.id === ing.id ? { ...ri, mark: !newMark } : ri
+                ),
+              },
+            }
+        ),
+      }));
+    }
   };
 
   const toggleRecipeAccordion = (id) => {
@@ -264,7 +308,7 @@ const Home = ({ user }) => {
       color: theme.colors.textLight,
       marginTop: '12px'
     },
-    checklistItem: (ingId) => ({
+    checklistItem: (mark) => ({
       display: "flex",
       alignItems: "center",
       gap: "8px",
@@ -272,10 +316,10 @@ const Home = ({ user }) => {
       cursor: "pointer",
       transition: "all 0.2s ease",
       borderBottom: "1px solid rgba(0,0,0,0.05)",
-      textDecoration: checkedItems[ingId] ? "line-through" : "none",
-      color: checkedItems[ingId] ? "rgba(0,0,0,0.4)" : theme.colors.textLight,
+      textDecoration: mark ? "line-through" : "none",
+      color: mark ? "rgba(0,0,0,0.4)" : theme.colors.textLight,
     }),
-    checklistInput: (ingId) => ({
+    checklistInput: (mark) => ({
       width: "18px",
       height: "18px",
       borderRadius: "50%",
@@ -285,7 +329,7 @@ const Home = ({ user }) => {
       appearance: "none",
       display: "grid",
       placeItems: "center",
-      backgroundColor: checkedItems[ingId] ? theme.accent.primary : "transparent",
+      backgroundColor: mark ? theme.accent.primary : "transparent",
       transition: "all 0.2s ease",
     })
   };
@@ -316,8 +360,8 @@ const Home = ({ user }) => {
                           const weight = (Number(ing.bakerspercent) / 100) * (er?.recipes?.doughweight / (totalPercent / 100)) * er.qty;
 
                           return (
-                            <li key={specialId} onClick={(e) => { e.stopPropagation(); toggleCheck(specialId); }} style={styles.checklistItem(specialId)}>
-                              <input type="checkbox" checked={checkedItems[specialId] || false} readOnly style={styles.checklistInput(specialId)} />
+                            <li key={specialId} onClick={(e) => toggleCheck(e, er, ing)} style={styles.checklistItem(ing.mark)}>
+                              <input type="checkbox" checked={ing.mark} readOnly style={styles.checklistInput(ing.mark)} />
                               <span> {ing.inventory?.ingredient} — {getWeightText(weight)}</span>
                             </li>
                           );
