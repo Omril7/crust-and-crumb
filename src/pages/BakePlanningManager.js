@@ -216,24 +216,21 @@ export default function BakePlanningManager({ user }) {
 
     // Add events for all dates
     for (const dateStr of datesToAdd) {
-      let eventId;
-      const existingEvent = events[dateStr]?.find(ev => !ev.isHoliday);
+      const { data: newEvent, error } = await supabase
+        .from('events')
+        .upsert(
+          [{ event_date: dateStr, user_id: user.id }],
+          { onConflict: 'user_id,event_date' }
+        )
+        .select()
+        .single();
 
-      if (existingEvent && existingEvent.eventId) {
-        eventId = existingEvent.eventId;
-      } else {
-        const { data: newEvent, error } = await supabase
-          .from('events')
-          .insert([{ event_date: dateStr, user_id: user.id }])
-          .select()
-          .single();
-
-        if (error) {
-          console.error(error);
-          continue;
-        }
-        eventId = newEvent.id;
+      if (error) {
+        console.error(error);
+        continue;
       }
+
+      const eventId = newEvent.id;
 
       const { error: erErr } = await supabase
         .from('event_recipes')
