@@ -74,9 +74,10 @@ export default function RecipeDetails({ user, recipe, onClose = () => { } }) {
   const styles = {
     card: {
       flex: 1,
-      background: theme.colors.activeButtonBg,
+      background: theme.colors.background2,
       padding: 12,
-      borderRadius: theme.borderRadius.navbar,
+      borderRadius: '12px',
+      boxShadow: '0 1px 5px rgba(0,0,0,0.1)',
     }
   };
 
@@ -94,11 +95,11 @@ export default function RecipeDetails({ user, recipe, onClose = () => { } }) {
           <div style={{ display: "flex", gap: 16 }}>
             <div style={styles.card}>
               <div style={{ fontSize: 12, color: theme.colors.textSecondary }}>מחיר מכירה (יחידה / כולל)</div>
-              <div style={{ fontSize: 16, fontWeight: 600 }}>{formatNumber(recipeData.sellingprice, 0) ?? "-"} ₪ / {formatNumber(recipeData.sellingprice * recipe?.qty, 0) ?? "-"} ₪</div>
+              <div style={{ fontSize: 16, fontWeight: 600, color: theme.colors.textDark }}>{formatNumber(recipeData.sellingprice, 0) ?? "-"} ₪ / {formatNumber(recipeData.sellingprice * recipe?.qty, 0) ?? "-"} ₪</div>
             </div>
             <div style={styles.card}>
               <div style={{ fontSize: 12, color: theme.colors.textSecondary }}>משקל בצק (יחידה / כולל)</div>
-              <div style={{ fontSize: 16, fontWeight: 600 }}>{getWeightText(recipeData?.doughweight)} / {getWeightText(recipeData?.doughweight * recipe?.qty)}</div>
+              <div style={{ fontSize: 16, fontWeight: 600, color: theme.colors.textDark }}>{getWeightText(recipeData?.doughweight)} / {getWeightText(recipeData?.doughweight * recipe?.qty)}</div>
             </div>
           </div>
 
@@ -106,7 +107,7 @@ export default function RecipeDetails({ user, recipe, onClose = () => { } }) {
           <div
             style={{
               border: "1px solid rgba(0,0,0,0.1)",
-              borderRadius: theme.borderRadius.navbar,
+              borderRadius: '12px',
               overflowX: "auto",
             }}
           >

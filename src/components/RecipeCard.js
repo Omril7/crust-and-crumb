@@ -13,20 +13,20 @@ const RecipeCard = ({ recipe, idx, selectedRecipe, setSelectedRecipe }) => {
       position: 'relative',
       cursor: 'pointer',
       padding: isMobile ? '16px' : isTablet ? '18px' : '20px',
-      borderRadius: theme.borderRadius?.navbar || '12px',
+      borderRadius: '12px',
       background: '#fff',
       boxShadow: isSelected
-        ? theme.shadows?.activeButton || '0 4px 12px rgba(0,0,0,0.2)'
+        ? theme.shadows.activeButton
         : isMobile ? '0 1px 4px rgba(0,0,0,0.1)' : '0 2px 6px rgba(0,0,0,0.1)',
       width: isMobile ? 'calc(50% - 8px)' : isTablet ? '200px' : '220px',
       minWidth: isMobile ? '140px' : isTablet ? '180px' : '200px',
       textAlign: 'center',
       transition: 'all 0.3s ease',
       border: isSelected
-        ? `2px solid ${theme.colors?.textLight || '#fff'}`
+        ? `2px solid ${theme.colors.textDark}`
         : '1px solid #ddd',
-      backgroundImage: isSelected ? theme.colors?.primaryGradient : 'none',
-      color: isSelected ? theme.colors?.textLight : '#333',
+      backgroundImage: isSelected ? theme.colors.primaryGradient : 'none',
+      color: isSelected ? theme.colors.textDark : '#333',
       // Mobile-specific optimizations
       ...(isMobile && {
         maxWidth: '160px',
@@ -53,11 +53,13 @@ const RecipeCard = ({ recipe, idx, selectedRecipe, setSelectedRecipe }) => {
       // Prevent text overflow on mobile
       wordBreak: 'break-word',
       hyphens: 'auto',
+      color: theme.colors.textDark
     },
     info: {
       fontSize: isMobile ? '0.8rem' : isTablet ? '0.9rem' : '0.95rem',
       margin: isMobile ? '4px 0' : '6px 0',
       lineHeight: '1.2',
+      color: theme.colors.textPrimary
     }
   };
 
@@ -66,7 +68,7 @@ const RecipeCard = ({ recipe, idx, selectedRecipe, setSelectedRecipe }) => {
     if (isMobile) return;
     
     e.currentTarget.style.transform = 'translateY(-4px)';
-    e.currentTarget.style.boxShadow = theme.shadows?.activeButton || '0 4px 12px rgba(0,0,0,0.2)';
+    e.currentTarget.style.boxShadow = theme.shadows.activeButton;
   };
 
   const handleMouseLeave = (e) => {
@@ -74,9 +76,7 @@ const RecipeCard = ({ recipe, idx, selectedRecipe, setSelectedRecipe }) => {
     if (isMobile) return;
     
     e.currentTarget.style.transform = 'translateY(0)';
-    e.currentTarget.style.boxShadow = isSelected
-      ? theme.shadows?.activeButton || '0 4px 12px rgba(0,0,0,0.2)'
-      : '0 2px 6px rgba(0,0,0,0.1)';
+    e.currentTarget.style.boxShadow = isSelected ? theme.shadows.activeButton : '0 2px 6px rgba(0,0,0,0.1)';
   };
 
   return (

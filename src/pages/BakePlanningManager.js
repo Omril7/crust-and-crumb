@@ -31,6 +31,7 @@ import {
   TreePalm,
   X,
 } from 'lucide-react';
+import { formatDate } from '../utils/helper';
 
 export default function BakePlanningManager({ user }) {
   const { theme } = useTheme();
@@ -48,13 +49,6 @@ export default function BakePlanningManager({ user }) {
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
-
-  const formatDate = (date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
 
   const getDaysInMonth = (year, month) => {
     const date = new Date(year, month, 1);
@@ -399,7 +393,7 @@ export default function BakePlanningManager({ user }) {
       borderRadius: '8px',
       border: 'none',
       background: theme.colors.primaryGradient,
-      color: 'white',
+      color: theme.colors.textPrimary,
       cursor: 'pointer',
       transition: 'background 0.2s',
       boxShadow: theme.shadows.activeButton,
@@ -419,7 +413,7 @@ export default function BakePlanningManager({ user }) {
       fontWeight: 'bold',
       borderBottom: `2px solid ${theme.colors.textSecondary}`,
       paddingBottom: isMobile ? 6 : 8,
-      color: theme.colors.textSecondary,
+      color: theme.colors.textPrimary,
       fontSize: isMobile ? '0.9rem' : '1rem'
     },
     daysGrid: {
@@ -457,21 +451,17 @@ export default function BakePlanningManager({ user }) {
       borderBottom: `5px solid ${theme.accent.error}`,
     },
     dayToday: {
-      border: `2px solid ${theme.colors.textLight}`,
-      boxShadow: '0 4px 12px rgba(139, 105, 20, 0.7)'
+      border: `2px solid ${theme.colors.textSecondary}`,
+      boxShadow: '0 4px 12px rgba(52, 66, 80, 0.7)'
     },
     dayNumber: (isToday) => ({
       fontWeight: 'bold',
-      color: isToday ? "white" : "black",
+      color: isToday ? theme.colors.background : theme.colors.textDark,
       fontSize: isMobile ? '0.9rem' : '1rem',
-      background: isToday ? "black" : "none",
+      background: isToday ? theme.colors.textDark : "none",
       padding: "2px 5px",
       borderRadius: "5px"
     }),
-    modal: {
-      maxWidth: isMobile ? '100%' : isTablet ? 380 : 420,
-      width: isMobile ? '100%' : '90%',
-    },
     label: {
       display: 'block',
       marginBottom: 5,
@@ -479,18 +469,9 @@ export default function BakePlanningManager({ user }) {
       color: theme.colors.textSecondary,
       fontSize: isMobile ? '0.9rem' : '1rem'
     },
-    input: {
-      width: '100%',
-      padding: isMobile ? '10px' : '8px',
-      borderRadius: '6px',
-      border: `1px solid ${theme.colors.textSecondary}`,
-      backgroundColor: 'white',
-      color: theme.colors.textPrimary,
-      fontSize: isMobile ? '16px' : '14px' // 16px prevents zoom on mobile
-    },
     removeBtn: {
       marginLeft: 10,
-      color: 'red',
+      color: theme.accent.error,
       cursor: 'pointer',
       border: 'none',
       background: 'none',
@@ -528,9 +509,10 @@ export default function BakePlanningManager({ user }) {
       marginTop: 10,
       marginBottom: 10,
       padding: '8px',
-      backgroundColor: '#f8f9fa',
+      backgroundColor: theme.colors.background2,
       borderRadius: '6px',
-      width: "50%"
+      width: "50%",
+      boxShadow: '0 1px 5px rgba(0,0,0,0.1)',
     },
     checkbox: {
       width: isMobile ? 18 : 16,
@@ -676,7 +658,7 @@ export default function BakePlanningManager({ user }) {
                 fontSize: isMobile ? '16px' : '14px',
                 marginBottom: 15
               }}
-              bgColor='white'
+              bgColor={theme.colors.background}
             />
 
             <Input
@@ -691,7 +673,7 @@ export default function BakePlanningManager({ user }) {
                 marginBottom: 15,
                 width: isMobile ? '100%' : '40%',
               }}
-              bgColor='white'
+              bgColor={theme.colors.background}
             />
 
             {/* Weekly Repeat Option */}
@@ -721,9 +703,10 @@ export default function BakePlanningManager({ user }) {
                 icon={<Repeat size={isMobile ? 20 : 18} />}
                 style={{
                   fontSize: isMobile ? '16px' : '14px',
-                  marginBottom: 15
+                  marginBottom: 15,
+                  marginTop: 10
                 }}
-                bgColor='white'
+                bgColor={theme.colors.background}
               />
             )}
 
@@ -747,12 +730,13 @@ export default function BakePlanningManager({ user }) {
                 marginTop: 15,
                 marginBottom: 15
               }}
+              bgColor={theme.colors.background}
             />
 
             <h4 style={{
               marginTop: 20,
               marginBottom: 10,
-              color: theme.textPrimary,
+              color: theme.colors.textPrimary,
             }}>
               אירועים לתאריך זה
             </h4>
@@ -784,7 +768,7 @@ export default function BakePlanningManager({ user }) {
                         sortable: false,
                         render: (_, ev) => (
                           <button
-                            style={{ ...styles.removeBtn, color: 'blue' }}
+                            style={{ ...styles.removeBtn, color: theme.accent.info }}
                             onClick={() => handleOpenRecipeDetails(ev)}
                             title="לחץ כדי לראות כמויות"
                           >

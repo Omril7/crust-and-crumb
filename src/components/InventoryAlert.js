@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react';
 import { AlertCircle, X } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useScreenSize } from '../hooks/useScreenSize';
+import { useLocalStorage } from '../hooks/useLocalStorage';
 
 function InventoryAlert() {
   const { theme } = useTheme();
-  const { isMobile, isTablet } = useScreenSize();
+  const { isMobile } = useScreenSize();
 
-  const [visible, setVisible] = useState(true);
+  const [visible, setVisible] = useLocalStorage('CCAlert', true);
   const [fadeIn, setFadeIn] = useState(false);
 
   useEffect(() => {
@@ -31,7 +32,6 @@ function InventoryAlert() {
         opacity: fadeIn ? 1 : 0,
         transform: fadeIn ? 'translateY(0)' : 'translateY(-10px)',
         transition: 'opacity 0.3s ease, transform 0.3s ease',
-        // width: 'fit-content'
       }}
     >
       <AlertCircle size={isMobile ? 18 : 20} color={theme.accent.primary} />

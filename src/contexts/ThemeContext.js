@@ -7,31 +7,32 @@ const ThemeContext = createContext();
 export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useLocalStorage('CCtheme', {
     colors: {
-      primaryGradient: 'linear-gradient(90deg, #f5e1c0, #d9a066)', // flour to baked crust
-      activeButtonBg: 'rgba(217, 160, 102, 0.15)', // warm brown hint
-      hoverButtonBg: 'rgba(217, 160, 102, 0.1)',
-      textLight: '#5b4636', // cocoa brown for text
-      textPrimary: '#333',
-      textSecondary: '#666'
+      primaryGradient: 'linear-gradient(90deg, #b7a871, #d1c498)',
+      activeButtonBg: 'rgba(183, 168, 113, 0.20)',
+      hoverButtonBg: 'rgba(183, 168, 113, 0.12)',
+
+      textDark: '#3e3a33',      // dark neutral
+      textPrimary: '#5a554a',   // softer dark
+      textSecondary: '#7a7466', // mid neutral
+      textMuted: '#a79f8e',     // muted beige-gray
+
+      background: '#fbf8f3',    // your main light color
+      background2: '#f3efe7'    // slightly darker warm tone
     },
-    borderRadius: {
-      navbar: '12px',
-      button: '25px',
-    },
+
     shadows: {
-      navbar: '0 4px 12px rgba(139, 110, 75, 0.15)', // warm-toned shadow
-      activeButton: '0 4px 12px rgba(139, 105, 20, 0.2)',
+      navbar: '0 4px 12px rgba(183, 168, 113, 0.20)',
+      activeButton: '0 4px 12px rgba(183, 168, 113, 0.30)',
     },
+
     accent: {
-      primary: '#d9a066',
-      secondary: '#3B6FB3', // Darker blue
-      info: '#186CB7',
-      error: '#B33B3B',
-      warning: '#ff9800',
-      success: '#769358',
-      disabled: "rgba(0, 0, 0, 0.38)",
+      primary: '#b7a871',   // your main color
+      info: '#4A7EBB',      // blue tone that fits warm palette
+      error: '#B94C4C',     // warm red
+      success: '#6f8f4f',   // earthy green
     }
   });
+  
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme }}>

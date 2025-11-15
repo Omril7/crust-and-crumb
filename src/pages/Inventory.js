@@ -9,6 +9,7 @@ import { useScreenSize } from '../hooks/useScreenSize';
 
 // Components
 import {
+  Accordion,
   Button,
   Container,
   Header,
@@ -63,6 +64,8 @@ export default function Inventory({ user }) {
 
   const [newIngredient, setNewIngredient] = useState(INIT_NEW_INGREDIENT);
   const [updatedIngredient, setUpdatedIngredient] = useState(INIT_UPDATED_INGREDIENT);
+  const [accordionOpen, setAccordionOpen] = useState(false);
+  const [subAccordionOpen, setSubAccordionOpen] = useState({add: false, update: false});
 
   const [editing, setEditing] = useState(null);
 
@@ -217,6 +220,16 @@ export default function Inventory({ user }) {
     setEditing(null);
   };
 
+  const handleClickAccordion = (e) => {
+    e.stopPropagation();
+    setAccordionOpen(!accordionOpen);
+  };
+
+  const handleClickSubAccordion = (e, value) => {
+    e.stopPropagation();
+    setSubAccordionOpen(prev => ({...prev, [value]: !prev[value]}));
+  };
+
   const sortedInventory = [...inventory].sort((a, b) => {
     // Derived items always last
     if (a.type === "derived" && b.type !== "derived") return 1;
@@ -234,63 +247,19 @@ export default function Inventory({ user }) {
   });
 
   const styles = {
-    gridContainer: {
-      display: 'grid',
-      gridTemplateColumns: isMobile ? '1fr' : isTablet ? '1fr 1fr' : '1fr 1fr',
-      gap: isMobile ? 15 : 20,
-      marginBottom: 25,
-    },
-    section: {
-      background: '#f9f9f9',
-      borderRadius: isMobile ? 6 : 8,
-      padding: isMobile ? 12 : 15,
-      boxShadow: '0 1px 5px rgba(0,0,0,0.1)',
-      marginBottom: '15px'
-    },
     sectionHeader: {
       fontSize: isMobile ? '1.1rem' : '1.2rem',
       fontWeight: '600',
-      marginBottom: isMobile ? 15 : 18,
-      color: theme.colors.textLight || '#4caf50',
       display: 'flex',
       alignItems: 'center',
       gap: 8,
-    },
-    formRow: {
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'flex-start',
-      gap: 10,
-      marginBottom: 15,
-    },
-    fileInput: {
-      cursor: 'pointer',
-      fontSize: isMobile ? '0.9rem' : '1rem',
-      color: theme.textPrimary || '#333',
-      border: `2px dashed ${theme.borderColor || '#ccc'}`,
-      padding: isMobile ? 15 : 20,
-      borderRadius: isMobile ? 8 : 10,
-      backgroundColor: theme.surface || '#fafafa',
-      transition: 'border-color 0.3s',
-      textAlign: 'center',
-    },
-    fileInputWrapper: {
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      gap: 10,
-      justifyContent: 'center',
-    },
-    buttonContainer: {
-      gridColumn: isMobile ? '1' : 'span 2',
-      display: 'flex',
-      justifyContent: isMobile ? 'stretch' : 'flex-start',
-      marginTop: isMobile ? 10 : 0
+      padding: 0,
+      margin: 0
     },
     formGrid: (cols) => ({
       display: 'grid',
       gridTemplateColumns: `repeat(${cols}, 1fr)`,
-      gap: 15
+      gap: 15,
     }),
     editInput: {
       width: isMobile ? '60px' : '50px',
@@ -385,7 +354,7 @@ export default function Inventory({ user }) {
                 <input
                   type="number"
                   value={editing.value}
-                    onChange={(e) => startEdit(row.id, e.target.value, 'price_per_unit')}
+                  onChange={(e) => startEdit(row.id, e.target.value, 'price_per_unit')}
                   onBlur={saveEdit}
                   autoFocus
                   style={styles.editInput}
@@ -407,7 +376,7 @@ export default function Inventory({ user }) {
         <div
           style={{
             cursor: "pointer",
-            color: "red",
+            color: theme.accent.error,
             display: "flex",
             justifyContent: "center"
           }}
@@ -431,15 +400,9 @@ export default function Inventory({ user }) {
         title={"ניהול מלאי"}
         icon={<Package size={isMobile ? 28 : 32} />}
       />
-
-      <section style={styles.section} aria-label="הוספת מלאי">
-        <InventoryAlert />
+      <Accordion open={accordionOpen} onClick={handleClickAccordion} title={"הוספת מרכיבים"}>
         <div style={styles.formGrid(isMobile ? '1' : '2')}>
-          <div style={{ width: '90%' }}>
-            <h3 style={styles.sectionHeader}>
-              <Plus size={isMobile ? 18 : 20} />
-              הוספת מלאי חדש
-            </h3>
+          <Accordion open={subAccordionOpen.add} onClick={(e) => handleClickSubAccordion(e, "add")} title={<h3 style={styles.sectionHeader}><Plus size={isMobile ? 18 : 20} />הוספת מלאי חדש</h3>}>
             <div style={styles.formGrid(isMobile || isTablet ? '1' : '2')}>
               <Input
                 label="מרכיב"
@@ -447,6 +410,7 @@ export default function Inventory({ user }) {
                 onChange={e => setNewIngredient({ ...newIngredient, ingredient: e.target.value })}
                 icon={<IceCreamBowl size={18} />}
                 style={{ width: '100%', fontSize: '16px' }}
+                bgColor={theme.colors.background}
               />
               <Input
                 label="כמות"
@@ -456,12 +420,14 @@ export default function Inventory({ user }) {
                 icon={<Hash size={18} />}
                 min={1}
                 style={{ width: '100%', fontSize: '16px' }}
+                bgColor={theme.colors.background}
               />
               <Select
                 label="סוג מרכיב"
                 value={newIngredient.type}
                 onChange={e => setNewIngredient({ ...newIngredient, type: e.target.value })}
                 options={[{ name: 'בסיסי', value: "base" }, { name: "נגזר", value: "derived" }]}
+                bgColor={theme.colors.background}
               />
 
               <Select
@@ -471,6 +437,7 @@ export default function Inventory({ user }) {
                 icon={<Ruler size={18} />}
                 options={['קג', 'גרם']}
                 style={{ width: '100%', fontSize: '16px' }}
+                bgColor={theme.colors.background}
               />
               <Input
                 label="מינימום"
@@ -480,6 +447,7 @@ export default function Inventory({ user }) {
                 icon={<ShieldMinus size={18} />}
                 min={1}
                 style={{ width: '100%', fontSize: '16px' }}
+                bgColor={theme.colors.background}
               />
               <Input
                 label={`מחיר ל- ${newIngredient.unit === "קג" ? "1 קג" : "100 גרם"}`}
@@ -489,6 +457,7 @@ export default function Inventory({ user }) {
                 icon={<span style={{ fontWeight: 'bold', fontSize: isMobile ? '1.1rem' : '1.3rem' }}>₪</span>}
                 min={1}
                 style={{ width: '100%', fontSize: '16px' }}
+                bgColor={theme.colors.background}
               />
               <Button
                 title="הוסף מרכיב"
@@ -512,6 +481,7 @@ export default function Inventory({ user }) {
                         icon={<IceCreamBowl size={18} />}
                         options={inventory.filter(i => i.type === "base").map(i => ({ name: i.ingredient, value: i.id }))}
                         style={{ width: '100%', fontSize: '16px' }}
+                        bgColor={theme.colors.background}
                       />
                       <Input
                         label="% מהכמות"
@@ -523,6 +493,7 @@ export default function Inventory({ user }) {
                           setNewIngredient({ ...newIngredient, recipe: updatedRecipe });
                         }}
                         style={{ width: '100%', fontSize: '16px' }}
+                        bgColor={theme.colors.background}
                       />
                     </div>
                     <Button
@@ -543,14 +514,9 @@ export default function Inventory({ user }) {
                 />
               </div>
             )}
+          </Accordion>
 
-          </div>
-
-          <div style={{ width: '90%' }}>
-            <h3 style={styles.sectionHeader}>
-              <Edit2 size={isMobile ? 18 : 20} />
-              עידכון מלאי
-            </h3>
+          <Accordion  open={subAccordionOpen.update} onClick={(e) => handleClickSubAccordion(e, "update")} title={<h3 style={styles.sectionHeader}><Edit2 size={isMobile ? 18 : 20} />עידכון מלאי</h3>}>
             <div style={styles.formGrid(isMobile || isTablet ? '1' : '2')}>
               <SelectWithSearchBar
                 label="מרכיב"
@@ -559,6 +525,7 @@ export default function Inventory({ user }) {
                 icon={<IceCreamBowl size={18} />}
                 options={inventory.map(inv => ({ name: inv.ingredient, value: inv.id }))}
                 style={{ width: '100%', fontSize: '16px' }}
+                bgColor={theme.colors.background}
               />
               <Input
                 label="כמות שהתווספה"
@@ -568,15 +535,16 @@ export default function Inventory({ user }) {
                 icon={<Hash size={18} />}
                 min={1}
                 style={{ width: '100%' }}
+                bgColor={theme.colors.background}
               />
               <Button
                 title="עדכן מרכיב"
                 onClick={updateIngredient}
               />
             </div>
-          </div>
+          </Accordion>
         </div>
-      </section>
+      </Accordion>
 
       {/* Inventory Table */}
       {loading ? (

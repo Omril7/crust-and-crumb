@@ -87,16 +87,16 @@ export default function Login({ onLogin }) {
     title: {
       fontSize: isMobile ? '1.5rem' : '1.75rem',
       fontWeight: '700',
-      color: '#2d3748',
+      color: theme.colors.textPrimary,
       marginBottom: '0.5rem',
-      background: 'linear-gradient(135deg, #8b6914 0%, #b8860b 100%)',
-      WebkitBackgroundClip: 'text',
-      WebkitTextFillColor: 'transparent',
-      backgroundClip: 'text',
+      // background: theme.colors.primaryGradient,
+      // WebkitBackgroundClip: 'text',
+      // WebkitTextFillColor: 'transparent',
+      // backgroundClip: 'text',
     },
     subtitle: {
       fontSize: '0.9rem',
-      color: '#64748b',
+      color: theme.colors.textSecondary,
       fontWeight: '400',
     },
     inputGroup: {
@@ -111,18 +111,11 @@ export default function Login({ onLogin }) {
       background: 'none',
       border: 'none',
       cursor: 'pointer',
-      color: '#64748b',
+      color: theme.colors.textSecondary,
       padding: '4px',
       borderRadius: '4px',
       transition: 'color 0.2s ease',
       zIndex: 10,
-    },
-    errorMessage: {
-      color: '#ef4444',
-      fontSize: '0.8rem',
-      marginTop: '0.25rem',
-      marginRight: '0.5rem',
-      display: 'block',
     },
     button: {
       display: 'flex',
@@ -132,8 +125,8 @@ export default function Login({ onLogin }) {
       padding: '14px 24px',
       background: isLoading
         ? 'linear-gradient(135deg, #94a3b8 0%, #64748b 100%)'
-        : 'linear-gradient(135deg, #8b6914 0%, #b8860b 100%)',
-      color: '#ffffff',
+        : theme.colors.primaryGradient,
+      color: theme.colors.textPrimary,
       border: 'none',
       borderRadius: '12px',
       fontSize: '1rem',
@@ -143,7 +136,7 @@ export default function Login({ onLogin }) {
       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       boxShadow: isLoading
         ? 'none'
-        : '0 4px 16px rgba(139, 105, 20, 0.3), inset 0 1px 0 rgba(255,255,255,0.2)',
+        : '0 4px 16px rgba(52, 66, 80, 0.7), inset 0 1px 0 rgba(255,255,255,0.2)',
       width: '100%',
       position: 'relative',
       overflow: 'hidden',
@@ -151,7 +144,7 @@ export default function Login({ onLogin }) {
     },
     buttonHover: {
       transform: 'translateY(-2px)',
-      boxShadow: '0 6px 20px rgba(139, 105, 20, 0.4), inset 0 1px 0 rgba(255,255,255,0.2)',
+      boxShadow: '0 6px 20px rgba(52, 66, 80, 0.4), inset 0 1px 0 rgba(255,255,255,0.2)',
     },
     loadingSpinner: {
       width: '18px',
@@ -235,10 +228,10 @@ export default function Login({ onLogin }) {
                   color: showPassword ? '#8b6914' : '#64748b',
                 }}
                 onMouseEnter={(e) => {
-                  e.target.style.color = '#8b6914';
+                  e.target.style.color = theme.colors.textDark;
                 }}
                 onMouseLeave={(e) => {
-                  e.target.style.color = showPassword ? '#8b6914' : '#64748b';
+                  e.target.style.color = showPassword ? theme.colors.textSecondary : '#64748b';
                 }}
               >
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -253,13 +246,13 @@ export default function Login({ onLogin }) {
             onMouseEnter={(e) => {
               if (!isLoading) {
                 e.target.style.transform = 'translateY(-2px)';
-                e.target.style.boxShadow = '0 6px 20px rgba(139, 105, 20, 0.4), inset 0 1px 0 rgba(255,255,255,0.2)';
+                e.target.style.boxShadow = '0 6px 20px rgba(52, 66, 80, 0.4), inset 0 1px 0 rgba(255,255,255,0.2)';
               }
             }}
             onMouseLeave={(e) => {
               if (!isLoading) {
                 e.target.style.transform = 'scale(1)';
-                e.target.style.boxShadow = '0 4px 16px rgba(139, 105, 20, 0.3), inset 0 1px 0 rgba(255,255,255,0.2)';
+                e.target.style.boxShadow = '0 4px 16px rgba(52, 66, 80, 0.3), inset 0 1px 0 rgba(255,255,255,0.2)';
               }
             }}
           >

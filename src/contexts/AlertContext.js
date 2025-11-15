@@ -40,14 +40,14 @@ export function AlertProvider({ children }) {
       justifyContent: 'center'
     },
     backdrop: {
-      background: theme.surface || '#fff',
+      background: theme.colors.background,
       borderRadius: 12,
-      boxShadow: theme.shadows.card || '0 2px 12px rgba(0,0,0,0.12)',
+      boxShadow: '0 2px 12px rgba(0,0,0,0.12)',
       padding: 32,
       minWidth: 300,
       maxWidth: 400,
       textAlign: 'center',
-      color: theme.textPrimary || '#333',
+      color: theme.colors.textPrimary,
       fontFamily: theme.fontFamily || 'inherit'
     },
     msg: {
@@ -58,8 +58,8 @@ export function AlertProvider({ children }) {
     },
     button: {
       background: 'transparent',
-      color: theme.accent.primary || '#1976d2',
-      border: `2px solid ${theme.accent.primary || '#1976d2'}`,
+      color: theme.colors.textPrimary,
+      border: `2px solid ${theme.colors.textPrimary}`,
       borderRadius: 8,
       padding: '10px 24px',
       fontWeight: 700,

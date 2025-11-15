@@ -242,9 +242,76 @@ export default function RecipesManager({ user }) {
     setSelectedRecipe(recipe);
   };
 
+  const headers = [
+    { key: 'ingredient', label: 'מרכיב' },
+    {
+      key: 'bakerspercent',
+      label: 'אחוזי בייקר',
+      render: (value, row, i) => (
+        <div
+          style={{ cursor: 'pointer' }}
+          onClick={() => startEditBakersPercent(row.id, row.bakerspercent)}
+        >
+          {editingBakersPercent?.id === row.id ? (
+            <input
+              type="number"
+              value={editingBakersPercent.value}
+              onChange={(e) =>
+                setEditingBakersPercent({ id: row.id, value: e.target.value })
+              }
+              onBlur={saveEditBakersPercent}
+              autoFocus
+              style={{
+                width: isMobile ? '50px' : '60px',
+                fontSize: isMobile ? '14px' : '16px'
+              }}
+            />
+          ) : (
+            value
+          )}
+        </div>
+      )
+    },
+    {
+      key: 'weight',
+      label: 'משקל (גרם)',
+      sortable: false,
+      render: (_, row) => {
+        const totalPercent = selectedRecipe.recipe_ingredients.reduce((sum, ing) => sum + (Number(ing.bakerspercent) || 0), 0);
+        return row.bakerspercent && totalPercent > 0
+          ? ((Number(row.bakerspercent) / 100) *
+            (selectedRecipe.doughweight / (totalPercent / 100))
+          ).toFixed(0)
+          : '';
+      }
+    },
+    {
+      key: 'remove',
+      label: 'מחק',
+      sortable: false,
+      render: (_, row) => (
+        <div
+          style={{
+            cursor: 'pointer',
+            color: 'red',
+            padding: isMobile ? '8px' : '4px',
+            display: 'flex',
+            justifyContent: 'center'
+          }}
+          onClick={() => removeIngredient(row.id)}
+          role="button"
+        >
+          <Trash2 size={isMobile ? 18 : 20} />
+        </div>
+      )
+    }
+  ];
+
+  const tableData = selectedRecipe?.recipe_ingredients.map(ingredient => ({ ...ingredient, ingredient: ingredient.inventory?.ingredient || 'Unknown' })) || [];
+
   const styles = {
     section: {
-      background: '#f9f9f9',
+      background: theme.colors.background2,
       borderRadius: isMobile ? 6 : 8,
       padding: isMobile ? 12 : isTablet ? 13 : 15,
       boxShadow: isMobile ? '0 1px 3px rgba(0,0,0,0.1)' : '0 1px 5px rgba(0,0,0,0.1)',
@@ -253,7 +320,7 @@ export default function RecipesManager({ user }) {
       fontSize: isMobile ? '1rem' : isTablet ? '1.1rem' : '1.2rem',
       fontWeight: '600',
       marginBottom: isMobile ? 12 : isTablet ? 15 : 18,
-      color: theme.colors.textLight || '#4caf50',
+      color: theme.colors.textDark,
       display: 'flex',
       alignItems: 'center',
       gap: isMobile ? 6 : 8,
@@ -265,20 +332,6 @@ export default function RecipesManager({ user }) {
       marginBottom: isMobile ? 12 : 15,
       flexWrap: 'wrap',
       flexDirection: isMobile ? 'column' : 'row',
-    },
-    button: {
-      padding: isMobile ? '10px 18px' : isTablet ? '11px 20px' : '12px 22px',
-      backgroundColor: theme.primary || '#4caf50',
-      color: theme.buttonText || '#fff',
-      border: 'none',
-      borderRadius: isMobile ? 8 : 10,
-      fontSize: isMobile ? '1rem' : '1.1rem',
-      fontWeight: '700',
-      cursor: 'pointer',
-      userSelect: 'none',
-      transition: 'background-color 0.3s',
-      boxShadow: theme.boxShadow || '0 4px 12px rgba(0,0,0,0.15)',
-      alignSelf: isMobile ? 'stretch' : 'flex-start',
     },
     grid: {
       display: 'grid',
@@ -314,6 +367,7 @@ export default function RecipesManager({ user }) {
             type="text"
             value={newRecipeName}
             onChange={(e) => setNewRecipeName(e.target.value)}
+            bgColor={theme.colors.background2}
           />
           <Button title={"הוסף"} onClick={addNewRecipeName} />
         </div>
@@ -358,7 +412,7 @@ export default function RecipesManager({ user }) {
               min={1}
               icon={<Weight size={isMobile ? 20 : 18} />}
               style={{ width: "50%" }}
-              bgColor='white'
+              bgColor={theme.colors.background}
             />
 
             <div style={{
@@ -381,7 +435,7 @@ export default function RecipesManager({ user }) {
                   width: isMobile ? '20px' : '22px',
                   height: isMobile ? '20px' : '22px',
                   cursor: 'pointer',
-                  accentColor: theme.accent.primary || '#4caf50'
+                  accentColor: theme.colors.textPrimary
                 }}
               />
               <label
@@ -407,7 +461,7 @@ export default function RecipesManager({ user }) {
               min={1}
               icon={<span style={{ fontWeight: 'bold', fontSize: isMobile ? '1.1rem' : '1.3rem' }}>₪</span>}
               style={{ width: "50%" }}
-              bgColor='white'
+              bgColor={theme.colors.background}
             />
             <Button
               title={"מחק מתכון"}
@@ -432,6 +486,7 @@ export default function RecipesManager({ user }) {
                 style={{ width: '100%' }}
                 list="ingredient-list"
                 dataList={inventory.map(client => client.ingredient)}
+                bgColor={theme.colors.background2}
               />
               <Input
                 label="בייקר"
@@ -439,6 +494,7 @@ export default function RecipesManager({ user }) {
                 value={newIngredient.bakerspercent}
                 onChange={(e) => setNewIngredient({ ...newIngredient, bakerspercent: e.target.value })}
                 icon={<Percent size={isMobile ? 20 : 18} />}
+                bgColor={theme.colors.background2}
               />
               <Button
                 title={isAddDisabled ? 'נא למלא את כל השדות הדרושים' : 'הוסף'}
@@ -452,74 +508,8 @@ export default function RecipesManager({ user }) {
           <Table
             title="טבלת רכיבים"
             sortable={true}
-            headers={[
-              { key: 'ingredient', label: 'מרכיב' },
-              {
-                key: 'bakerspercent',
-                label: 'אחוזי בייקר',
-                render: (value, row, i) => (
-                  <div
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => startEditBakersPercent(row.id, row.bakerspercent)}
-                  >
-                    {editingBakersPercent?.id === row.id ? (
-                      <input
-                        type="number"
-                        value={editingBakersPercent.value}
-                        onChange={(e) =>
-                          setEditingBakersPercent({ id: row.id, value: e.target.value })
-                        }
-                        onBlur={saveEditBakersPercent}
-                        autoFocus
-                        style={{
-                          width: isMobile ? '50px' : '60px',
-                          fontSize: isMobile ? '14px' : '16px'
-                        }}
-                      />
-                    ) : (
-                      value
-                    )}
-                  </div>
-                )
-              },
-              {
-                key: 'weight',
-                label: 'משקל (גרם)',
-                sortable: false,
-                render: (_, row) => {
-                  const totalPercent = selectedRecipe.recipe_ingredients.reduce((sum, ing) => sum + (Number(ing.bakerspercent) || 0), 0);
-                  return row.bakerspercent && totalPercent > 0
-                    ? ((Number(row.bakerspercent) / 100) *
-                      (selectedRecipe.doughweight / (totalPercent / 100))
-                    ).toFixed(0)
-                    : '';
-                }
-              },
-              {
-                key: 'remove',
-                label: 'מחק',
-                sortable: false,
-                render: (_, row) => (
-                  <div
-                    style={{
-                      cursor: 'pointer',
-                      color: 'red',
-                      padding: isMobile ? '8px' : '4px',
-                      display: 'flex',
-                      justifyContent: 'center'
-                    }}
-                    onClick={() => removeIngredient(row.id)}
-                    role="button"
-                  >
-                    <Trash2 size={isMobile ? 18 : 20} />
-                  </div>
-                )
-              }
-            ]}
-            data={selectedRecipe.recipe_ingredients.map(ingredient => ({
-              ...ingredient,
-              ingredient: ingredient.inventory?.ingredient || 'Unknown'
-            }))}
+            headers={headers}
+            data={tableData}
           />
         </Modal>
       )}

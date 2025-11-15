@@ -41,7 +41,7 @@ const Navbar = ({ onLogout }) => {
       gap: isMobile ? '0' : '12px',
       padding: isMobile ? '8px 16px' : '12px 20px',
       background: theme.colors.primaryGradient,
-      borderRadius: theme.borderRadius.navbar,
+      borderRadius: '12px',
       boxShadow: theme.shadows.navbar,
       margin: '10px auto',
       maxWidth: isMobile ? '95%' : 'fit-content',
@@ -49,9 +49,9 @@ const Navbar = ({ onLogout }) => {
     },
     button: {
       padding: isMobile ? '8px 12px' : isTablet ? '9px 15px' : '10px 18px',
-      color: theme.colors.textLight,
+      color: theme.colors.textDark,
       border: 'none',
-      borderRadius: theme.borderRadius.button,
+      borderRadius: '25px',
       cursor: 'pointer',
       fontWeight: '600',
       fontSize: isMobile ? '13px' : isTablet ? '14px' : '15px',
@@ -84,7 +84,7 @@ const Navbar = ({ onLogout }) => {
     mobileMenuToggle: {
       background: 'none',
       border: 'none',
-      color: theme.colors.textLight,
+      color: theme.colors.textDark,
       fontSize: '18px',
       cursor: 'pointer',
       padding: '4px',
@@ -92,7 +92,7 @@ const Navbar = ({ onLogout }) => {
       transition: 'background-color 0.2s ease',
     },
     currentPageIndicator: {
-      color: theme.colors.textLight,
+      color: theme.colors.textDark,
       fontWeight: '600',
       fontSize: '14px',
     },
@@ -133,6 +133,7 @@ const Navbar = ({ onLogout }) => {
 
     let { error } = await supabase.auth.signOut();
     onLogout();
+    setIsMenuOpen(false);
   }
 
   if (isMobile) {
@@ -219,7 +220,7 @@ const Navbar = ({ onLogout }) => {
         {currentPath !== 'login' && (
           <button
             onClick={handleLogout}
-            style={{ ...styles.button, color: theme.accent.error }}
+            style={{ ...styles.button, color: `${theme.accent.error}bb` }}
             onMouseEnter={(e) => e.target.style.backgroundColor = styles.hoverEffect.backgroundColor}
             onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
           >

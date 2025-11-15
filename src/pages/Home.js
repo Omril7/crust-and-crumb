@@ -12,15 +12,15 @@ import { Accordion, CircularLoader } from '../components/components';
 import {
   BookOpen,
   CalendarDays,
-  Package,
-  ChevronDown,
-  ChevronUp,
+  Package
 } from 'lucide-react';
-import { getWeightText, retry } from '../utils/helper';
+import { formatDate, getWeightText, retry } from '../utils/helper';
+import useDailyMarkReset from '../hooks/useDailyMarkReset';
 
 const Home = ({ user }) => {
   const { theme } = useTheme();
   const navigate = useNavigate();
+  const resetMarksIfNeeded = useDailyMarkReset(user);
 
   const [loading, setLoading] = useState(true);
   const [lowStockCount, setLowStockCount] = useState(0);
@@ -89,18 +89,13 @@ const Home = ({ user }) => {
 
   const fetchTomorrowEvent = async () => {
     if (!user) return;
+    await resetMarksIfNeeded();
 
     const today = new Date();
     const tomorrow = new Date(today);
     tomorrow.setDate(today.getDate() + 1);
 
-    const pad = (n) => String(n).padStart(2, '0');
-
-    const yyyy = tomorrow.getFullYear();
-    const mm = pad(tomorrow.getMonth() + 1);
-    const dd = pad(tomorrow.getDate());
-
-    const tommorowString = `${yyyy}-${mm}-${dd}`;
+    const tommorowString = formatDate(tomorrow);
 
     const { data, error } = await supabase
       .from("events")
@@ -256,7 +251,7 @@ const Home = ({ user }) => {
       fontSize: '36px',
       fontWeight: 'bold',
       marginBottom: '32px',
-      color: theme.colors.textLight,
+      color: theme.colors.textDark,
       textAlign: 'center'
     },
     statsGrid: {
@@ -266,11 +261,11 @@ const Home = ({ user }) => {
       marginBottom: '32px'
     },
     statCard: {
-      background: 'rgba(255, 255, 255, 0.8)',
+      background: theme.colors.background,
       backdropFilter: 'blur(8px)',
       borderRadius: '16px',
       padding: '24px',
-      border: '1px solid rgba(217, 160, 102, 0.2)',
+      border: `1px solid ${theme.colors.textPrimary}33`,
       boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
       textAlign: 'center',
       cursor: "pointer"
@@ -279,34 +274,22 @@ const Home = ({ user }) => {
       width: '48px',
       height: '48px',
       margin: '0 auto 16px',
-      color: theme.accent.primary
+      color: theme.colors.textSecondary,
     },
     statNumber: {
       fontSize: '32px',
       fontWeight: 'bold',
-      color: theme.accent.primary,
+      color: theme.colors.textPrimary,
       marginBottom: '8px'
     },
     statLabel: {
-      color: theme.colors.textLight,
+      color: theme.colors.textPrimary,
       fontSize: '16px'
-    },
-    recipeItem: {
-      marginTop: '12px',
-      padding: '12px',
-      borderRadius: '8px',
-      background: 'rgba(255,255,255,0.7)',
-      boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
     },
     ingredientList: {
       marginTop: '8px',
       fontSize: '14px',
       paddingRight: '12px'
-    },
-    noEvent: {
-      textAlign: 'center',
-      color: theme.colors.textLight,
-      marginTop: '12px'
     },
     checklistItem: (mark) => ({
       display: "flex",
@@ -317,19 +300,19 @@ const Home = ({ user }) => {
       transition: "all 0.2s ease",
       borderBottom: "1px solid rgba(0,0,0,0.05)",
       textDecoration: mark ? "line-through" : "none",
-      color: mark ? "rgba(0,0,0,0.4)" : theme.colors.textLight,
+      color: mark ? "rgba(0,0,0,0.4)" : theme.colors.textPrimary,
     }),
     checklistInput: (mark) => ({
       width: "18px",
       height: "18px",
       borderRadius: "50%",
-      border: "2px solid " + theme.accent.primary,
-      accentColor: theme.accent.primary,
+      border: `2px solid ${mark ? theme.colors.textMuted : theme.colors.textPrimary}`,
+      accentColor: theme.colors.textPrimary,
       cursor: "pointer",
       appearance: "none",
       display: "grid",
       placeItems: "center",
-      backgroundColor: mark ? theme.accent.primary : "transparent",
+      backgroundColor: mark ? theme.colors.textPrimary : "transparent",
       transition: "all 0.2s ease",
     })
   };
